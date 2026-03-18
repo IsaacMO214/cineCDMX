@@ -5,8 +5,8 @@ from itertools import chain
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
-from .forms import PeliculaForm, FuncionForm, GeneroForm, UsuarioForm
-from .models import Pelicula, Sucursal, Usuario, Funcion, Genero, RolUsuario, EstatusPelicula, Boleto
+from .forms import PeliculaForm, FuncionForm, GeneroForm, UsuarioForm, SalaForm
+from .models import Pelicula, Sucursal, Usuario, Funcion, Genero, RolUsuario, EstatusPelicula, Boleto, Sala
 
 
 def get_data_from_tmdb(tmdb_id):
@@ -40,6 +40,9 @@ def cartelera_view(request):
         request.session['usuario_id'] = usuario.id
         request.session['usuario_nombre'] = usuario.nombre
         request.session['usuario_rol'] = usuario.rol
+
+    if request.session.get('usuario_rol') == 'EMPLEADO':
+        return redirect('dashboard_empleado')
 
     sucursal_id = request.GET.get('sucursal')
     hoy = datetime.date.today()
@@ -112,6 +115,20 @@ def horarios_disponibles_view(request):
             
     return JsonResponse({'horarios': horarios_disponibles})
 
+
+def dashboard_empleado_view(request):
+    if request.session.get('usuario_rol') != 'EMPLEADO':
+        return redirect('cartelera')
+    
+    from .models import Sala, Genero, Usuario, Pelicula, Funcion
+    context = {
+        'clientes': Usuario.objects.filter(rol='CLIENTE'),
+        'salas': Sala.objects.all(),
+        'generos': Genero.objects.all().order_by('nombre'),
+        'peliculas': Pelicula.objects.all().order_by('titulo'),
+        'funciones': Funcion.objects.all().order_by('-fecha', '-hora_inicio'),
+    }
+    return render(request, 'cartelera/dashboard_empleado.html', context)
 
 def login_view(request):
     if request.method == 'POST':
@@ -314,6 +331,56 @@ def eliminar_genero_view(request, genero_id):
         genero.delete()
         return redirect('generos')
     return redirect('generos')
+
+
+def salas_view(request):
+    if request.session.get('usuario_rol') != 'EMPLEADO':
+        return redirect('login')
+    if request.method == 'POST':
+        form = SalaForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('salas')
+    else:
+        form = SalaForm()
+    return render(request, 'cartelera/salas.html', {
+        'salas': Sala.objects.all().order_by('sucursal__nombre', 'numero'),
+        'form': form,
+    })
+
+
+def editar_sala_view(request, sala_id):
+    if request.session.get('usuario_rol') != 'EMPLEADO':
+        return redirect('login')
+    sala = get_object_or_404(Sala, id=sala_id)
+    if request.method == 'POST':
+        form = SalaForm(request.POST, instance=sala)
+        if form.is_valid():
+            form.save()
+            return redirect('salas')
+    else:
+        form = SalaForm(instance=sala)
+    return render(request, 'cartelera/salas.html', {
+        'salas': Sala.objects.all().order_by('sucursal__nombre', 'numero'),
+        'form': form,
+        'editando': sala,
+    })
+
+
+def eliminar_sala_view(request, sala_id):
+    if request.session.get('usuario_rol') != 'EMPLEADO':
+        return redirect('login')
+    sala = get_object_or_404(Sala, id=sala_id)
+    if request.method == 'POST':
+        if sala.funcion_set.exists():
+            return render(request, 'cartelera/salas.html', {
+                'salas': Sala.objects.all().order_by('sucursal__nombre', 'numero'),
+                'form': SalaForm(),
+                'error_eliminar': f'No se puede eliminar la Sala {sala.numero} porque tiene funciones programadas.',
+            })
+        sala.delete()
+        return redirect('salas')
+    return redirect('salas')
 
 def comprar_boletos_view(request, funcion_id):
     funcion = get_object_or_404(Funcion, id=funcion_id)

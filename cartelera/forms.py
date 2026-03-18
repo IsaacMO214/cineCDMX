@@ -1,5 +1,5 @@
 from django import forms
-from .models import Pelicula, Genero, Usuario, Funcion
+from .models import Pelicula, Genero, Usuario, Funcion, Sala
 
 
 class GeneroForm(forms.ModelForm):
@@ -8,6 +8,18 @@ class GeneroForm(forms.ModelForm):
         fields = ['nombre']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Acción, Comedia, Terror...'}),
+        }
+
+
+class SalaForm(forms.ModelForm):
+    class Meta:
+        model = Sala
+        fields = ['numero', 'sucursal', 'filas', 'columnas']
+        widgets = {
+            'numero': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej. 1, 2, 3...'}),
+            'sucursal': forms.Select(attrs={'class': 'form-control'}),
+            'filas': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 26}),
+            'columnas': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
         }
 
 

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Salas - Cinehub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/agregar_pelicula.css' %}">
+    <link rel="stylesheet" href="{% static 'css/salas.css' %}">
+</head>
+<body>
+    <header class="main-header">
+        <div class="container">
+            <h1 class="logo-text">
+                <a href="{% url 'cartelera' %}">
+                    <img src="{% static 'images/cinehub_logo.png' %}" alt="Cinehub Logo" class="header-logo">
+                </a>
+            </h1>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="{% url 'dashboard_empleado' %}">Dashboard</a></li>
+                    <li><span class="nav-greeting">Hola, {{ request.session.usuario_nombre }}</span></li>
+                    <li><a href="{% url 'logout' %}" class="nav-link-logout">Salir</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div style="margin-top: 20px;">
+            <a href="{% url 'dashboard_empleado' %}" style="color: var(--primary-orange); text-decoration: none; font-weight: 600;">← Volver al Dashboard</a>
+        </div>
+
+        <h2 class="section-title" style="margin-top: 20px;">Geștión de Salas</h2>
+
+        {% if error_eliminar %}
+        <div class="alert-error">⚠️ {{ error_eliminar }}</div>
+        {% endif %}
+
+        <div class="generos-layout">
+
+            <!-- TABLA DE SALAS -->
+            <div class="generos-tabla-panel">
+                <p class="panel-titulo">📋 Salas registradas ({{ salas|length }})</p>
+                {% if salas %}
+                <table class="generos-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Sala</th>
+                            <th>Sucursal</th>
+                            <th>Capacidad</th>
+                            <th>Funciones</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sala in salas %}
+                        <tr {% if editando and editando.id == sala.id %}style="background-color: rgba(249, 115, 22, 0.1); border-left: 2px solid var(--primary-orange);"{% endif %}>
+                            <td style="color: var(--text-muted); font-size: 12px;">{{ sala.id }}</td>
+                            <td><strong style="color: white;">Sala {{ sala.numero }}</strong></td>
+                            <td>{{ sala.sucursal.nombre }}</td>
+                            <td>{{ sala.filas }} filas × {{ sala.columnas }} col</td>
+                            <td><span class="badge-peliculas">{{ sala.funcion_set.count }} función(es)</span></td>
+                            <td>
+                                <div class="acciones-td">
+                                    <a href="{% url 'editar_sala' sala.id %}" class="btn-editar-genero">✏️ Editar</a>
+                                    <form method="POST" action="{% url 'eliminar_sala' sala.id %}" style="display:inline;"
+                                          onsubmit="return confirm('¿Eliminar la Sala {{ sala.numero }}? Esta acción no se puede deshacer.')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-eliminar-genero"
+                                            {% if sala.funcion_set.count > 0 %}
+                                                title="No se puede eliminar: tiene {{ sala.funcion_set.count }} funcion(es) programada(s)"
+                                                disabled
+                                            {% endif %}>
+                                            🗑️ Eliminar
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                    <p style="margin-top: 20px; opacity: 0.6; text-align: center;">No hay salas registradas todavía.</p>
+                {% endif %}
+            </div>
+
+            <!-- PANEL FORMULARIO -->
+            <div class="generos-form-panel">
+                {% if editando %}
+                    <div class="editando-banner">
+                        <span>✏️ Editando: Sala {{ editando.numero }}</span>
+                        <a href="{% url 'salas' %}">✕ Cancelar</a>
+                    </div>
+                    <p class="panel-titulo">Modificar Sala</p>
+                {% else %}
+                    <p class="panel-titulo">➕ Nueva Sala</p>
+                {% endif %}
+
+                {% if form.errors %}
+                <div class="alert-error">
+                    {% for field in form %}{% for error in field.errors %}<p>{{ error }}</p>{% endfor %}{% endfor %}
+                </div>
+                {% endif %}
+
+                <form method="POST" action="{% if editando %}{% url 'editar_sala' editando.id %}{% else %}{% url 'salas' %}{% endif %}">
+                    {% csrf_token %}
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label for="{{ form.numero.id_for_label }}" style="font-weight: 600; display: block; margin-bottom: 6px; color: var(--primary-orange);">Número de Sala</label>
+                        {{ form.numero }}
+                    </div>
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label for="{{ form.sucursal.id_for_label }}" style="font-weight: 600; display: block; margin-bottom: 6px; color: var(--primary-orange);">Sucursal</label>
+                        {{ form.sucursal }}
+                    </div>
+                    <div class="form-group" style="margin-top: 15px; display: flex; gap: 10px;">
+                        <div style="flex: 1;">
+                            <label for="{{ form.filas.id_for_label }}" style="font-weight: 600; display: block; margin-bottom: 6px; color: var(--primary-orange);">Letras (Filas)</label>
+                            {{ form.filas }}
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="{{ form.columnas.id_for_label }}" style="font-weight: 600; display: block; margin-bottom: 6px; color: var(--primary-orange);">Asientos (Cols)</label>
+                            {{ form.columnas }}
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary" style="margin-top: 20px; padding: 12px; width: 100%; font-size: 15px;">
+                        {% if editando %}💾 Guardar cambios{% else %}✅ Registrar Sala{% endif %}
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <div class="container">
+            <p>&copy; 2026 Cine CDMX - Panel de Gerencia</p>
+        </div>
+    </footer>
+</body>
+</html>

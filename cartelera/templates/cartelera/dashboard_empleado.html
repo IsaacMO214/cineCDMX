@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Empleado - Cinehub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard_empleado.css' %}">
+</head>
+
+<body>
+
+    <header class="main-header">
+        <div class="container">
+            <h1 class="logo-text">
+                <img src="{% static 'images/cinehub_logo.png' %}" alt="DTC GANG Logo" class="header-logo">
+            </h1>
+            <nav class="main-nav">
+                <ul>
+                    <li><span class="nav-greeting">Panel Exclusivo: Empleados</span></li>
+                    <li><span class="nav-greeting">Hola, {{ request.session.usuario_nombre }}</span></li>
+                    <li><a href="{% url 'logout' %}" class="nav-link-logout">Salir</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="dashboard-container container">
+        <h2 class="section-title">Dashboard de Empleado</h2>
+        <p>Selecciona una pestaña para ver y gestionar los recursos del sistema.</p>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="openTab(event, 'tab-peliculas')">Películas</button>
+            <button class="tab-btn" onclick="openTab(event, 'tab-funciones')">Funciones</button>
+            <button class="tab-btn" onclick="openTab(event, 'tab-generos')">Géneros</button>
+            <button class="tab-btn" onclick="openTab(event, 'tab-salas')">Salas</button>
+            <button class="tab-btn" onclick="openTab(event, 'tab-clientes')">Clientes registrados</button>
+        </div>
+
+        <!-- Películas -->
+        <div id="tab-peliculas" class="tab-content active">
+            <div class="header-actions">
+                <h3>Listado de Películas</h3>
+                <a href="{% url 'agregar_pelicula' %}" class="btn-add">+ Añadir Película</a>
+            </div>
+            <table class="dashboard-table">
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Género</th>
+                        <th>Clasificación</th>
+                        <th>Estatus</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pelicula in peliculas %}
+                    <tr>
+                        <td>{{ pelicula.titulo }}</td>
+                        <td>{{ pelicula.genero.nombre }}</td>
+                        <td>{{ pelicula.clasificacion }}</td>
+                        <td>{{ pelicula.estatus }}</td>
+                        <td>
+                            <div style="display: flex; gap: 10px;">
+                                <a href="{% url 'editar_pelicula' pelicula.id %}" class="action-link">Editar</a>
+                                <form action="{% url 'eliminar_pelicula' pelicula.id %}" method="post" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="action-link delete" style="background:none; border:none; padding:0; cursor:pointer;" onclick="return confirm('¿Eliminar esta película?');">Eliminar</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5">No hay películas registradas.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Funciones -->
+        <div id="tab-funciones" class="tab-content">
+            <div class="header-actions">
+                <h3>Programación de Funciones</h3>
+                <a href="{% url 'agregar_funcion' %}" class="btn-add">+ Programar Función</a>
+            </div>
+            <table class="dashboard-table">
+                <thead>
+                    <tr>
+                        <th>Película</th>
+                        <th>Sala</th>
+                        <th>Fecha</th>
+                        <th>Hora</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for funcion in funciones %}
+                    <tr>
+                        <td>{{ funcion.pelicula.titulo }}</td>
+                        <td>{{ funcion.sala }}</td>
+                        <td>{{ funcion.fecha|date:"d M Y" }}</td>
+                        <td>{{ funcion.hora_inicio|time:"H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4">No hay funciones programadas.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Géneros -->
+        <div id="tab-generos" class="tab-content">
+            <div class="header-actions">
+                <h3>Administrar Géneros</h3>
+                <a href="{% url 'generos' %}" class="btn-add">Ir a Gestor de Géneros</a>
+            </div>
+            <table class="dashboard-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre del Género</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for genero in generos %}
+                    <tr>
+                        <td>{{ genero.id }}</td>
+                        <td>{{ genero.nombre }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="2">No hay géneros.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Salas -->
+        <div id="tab-salas" class="tab-content">
+            <div class="header-actions">
+                <h3>Salas Disponibles</h3>
+                <a href="{% url 'salas' %}" class="btn-add">Ir a Gestor de Salas</a>
+            </div>
+            <table class="dashboard-table">
+                <thead>
+                    <tr>
+                        <th>ID de Sala</th>
+                        <th>Número de Sala</th>
+                        <th>Sucursal Perteneciente</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sala in salas %}
+                    <tr>
+                        <td>{{ sala.id }}</td>
+                        <td>Sala {{ sala.numero }}</td>
+                        <td>{{ sala.sucursal.nombre }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3">No hay salas registradas.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Clientes -->
+        <div id="tab-clientes" class="tab-content">
+            <div class="header-actions">
+                <h3>Directorio de Clientes</h3>
+            </div>
+            <table class="dashboard-table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Correo</th>
+                        <th>Rol</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cliente in clientes %}
+                    <tr>
+                        <td>{{ cliente.nombre }}</td>
+                        <td>{{ cliente.correo }}</td>
+                        <td>{{ cliente.rol }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3">No hay clientes registrados en el sistema.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </main>
+
+    <footer class="main-footer">
+        <div class="container">
+            <p>&copy; 2026 DTC GANG V3. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+                tabcontent[i].classList.remove("active");
+            }
+            tablinks = document.getElementsByClassName("tab-btn");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].classList.remove("active");
+            }
+            document.getElementById(tabName).style.display = "block";
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+    </script>
+</body>
+</html>
