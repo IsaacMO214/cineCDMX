@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programar Función - Cine CDMX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/agregar_pelicula.css' %}">
+</head>
+
+<body>
+    <header class="main-header">
+        <div class="container">
+            <h1 class="logo-text">
+                <a href="{% url 'cartelera' %}">
+                    <img src="{% static 'images/cinehub_logo.png' %}" alt="Cinehub Logo" class="header-logo">
+                </a>
+            </h1>
+            <nav class="main-nav">
+                <ul style="align-items: center; display: flex; gap: 20px; list-style: none;">
+                    <li><a href="{% url 'cartelera' %}">Inicio</a></li>
+                    
+                    {% if request.session.usuario_id %}
+                        <!-- Menú privado para quienes tienen sesión iniciada -->
+                        {% if request.session.usuario_rol == 'ADMIN' or request.session.usuario_rol == 'EMPLEADO' %}
+                            <li><a href="{% url 'agregar_pelicula' %}" style="color:#ffb347; padding-bottom: 2px;">+ Agregar Peli</a></li>
+                            <li><a href="{% url 'agregar_funcion' %}" style="color:#ffb347; border-bottom: 1px dashed #ffb347; padding-bottom: 2px;">+ Prog. Función</a></li>
+                            <li><a href="{% url 'generos' %}" style="color:#ffb347; padding-bottom: 2px;">&#9823; Géneros</a></li>
+                        {% endif %}
+                        <li><span style="color:var(--white); font-weight:600; opacity: 0.9;">Hola, {{ request.session.usuario_nombre }}</span></li>
+                        <li><a href="{% url 'logout' %}" style="text-decoration:underline; font-size: 12px;">Salir</a></li>
+                    {% else %}
+                        <!-- Menú público -->
+                        <li><a href="{% url 'login' %}" style="border: 1px solid white; padding: 6px 15px; border-radius: 6px;">Iniciar Sesión</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div style="margin-top: 20px;">
+            <a href="{% url 'cartelera' %}" style="color: var(--primary-orange); text-decoration: none; font-weight: 600;">← Volver a la cartelera</a>
+        </div>
+
+        <div class="crud-container" style="max-width: 600px;">
+            <h2 class="section-title">Programar Nueva Función</h2>
+            <p style="margin-bottom: 30px; opacity: 0.8;">
+                Asigna un horario y una sala a las películas que ya existen en tu catálogo central.
+            </p>
+
+            {% if form.errors %}
+                <div style="background-color: rgba(255, 77, 77, 0.1); border-left: 4px solid #ff4d4d; color: #ff9999; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+                    <strong style="color: #ff4d4d;">¡Atención gerente!</strong> Revisa los siguientes errores:
+                    <ul style="margin-top: 5px; margin-bottom: 0;">
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <form method="POST">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="{{ form.pelicula.id_for_label }}" style="font-weight: 600; color: var(--primary-orange); margin-bottom: 8px; display: block;">1. Selecciona la Película</label>
+                    {{ form.pelicula }}
+                </div>
+
+                <div class="two-columns" style="gap: 20px;">
+                    <div class="form-group">
+                        <label for="sucursal_filter" style="font-weight: 600; color: var(--primary-orange); margin-bottom: 8px; display: block;">2. Selecciona la Sucursal</label>
+                        <select id="sucursal_filter" class="form-control" onchange="actualizarSalas()">
+                            <option value="">-- Elige una sucursal --</option>
+                            {% for sucursal in sucursales %}
+                                <option value="{{ sucursal.id }}">{{ sucursal.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group" id="sala_group" style="opacity: 0.5; pointer-events: none; transition: 0.3s;">
+                        <label for="{{ form.sala.id_for_label }}" style="font-weight: 600; color: var(--primary-orange); margin-bottom: 8px; display: block;">Escoge la Sala</label>
+                        {{ form.sala }}
+                    </div>
+                </div>
+
+                <div class="two-columns" style="gap: 20px;">
+                    <div class="form-group">
+                        <label for="{{ form.fecha.id_for_label }}" style="font-weight: 600; color: var(--primary-orange); margin-bottom: 8px; display: block;">3. Fecha de Proyección</label>
+                        {{ form.fecha }}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.hora_inicio.id_for_label }}" style="font-weight: 600; color: var(--primary-orange); margin-bottom: 8px; display: block;">4. Hora de Comienzo</label>
+                        {{ form.hora_inicio }}
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 20px; font-size: 16px;">
+                    ✅ Programar Función en Cartelera
+                </button>
+            </form>
+
+        </div>
+    </main>
+
+    <footer class="main-footer" style="margin-top: 50px;">
+        <div class="container">
+            <p>&copy; 2026 Cine CDMX - Panel de Gerencia</p>
+        </div>
+    </footer>
+
+    {{ salas_json|json_script:"salas-por-sucursal" }}
+    <script>
+        const salasPorSucursal = JSON.parse(document.getElementById('salas-por-sucursal').textContent) || {};
+
+        function actualizarSalas() {
+            const sucursalId = document.getElementById('sucursal_filter').value;
+            const salaSelect = document.getElementById('id_sala');
+            const salaGroup = document.getElementById('sala_group');
+            
+            salaSelect.innerHTML = '<option value="">---------</option>';
+            
+            if (sucursalId && salasPorSucursal[sucursalId]) {
+                salaGroup.style.opacity = '1';
+                salaGroup.style.pointerEvents = 'auto';
+                salasPorSucursal[sucursalId].forEach(sala => {
+                    const opt = document.createElement('option');
+                    opt.value = sala.id;
+                    opt.textContent = sala.text;
+                    salaSelect.appendChild(opt);
+                });
+            } else {
+                salaGroup.style.opacity = '0.5';
+                salaGroup.style.pointerEvents = 'none';
+            }
+            fetchHorariosDisponibles();
+        }
+
+        function fetchHorariosDisponibles() {
+            const salaId = document.getElementById('id_sala').value;
+            const fecha = document.getElementById('id_fecha').value;
+            const horaSelect = document.getElementById('id_hora_inicio');
+            
+            horaSelect.innerHTML = '<option value="">-- Selecciona fecha y sala primero --</option>';
+            horaSelect.disabled = true;
+
+            if (salaId && fecha) {
+                horaSelect.innerHTML = '<option value="">Cargando horarios...</option>';
+                
+                fetch(`/api/horarios_disponibles/?sala=${salaId}&fecha=${fecha}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        horaSelect.innerHTML = '<option value="">-- Selecciona un horario --</option>';
+                        horaSelect.disabled = false;
+                        
+                        if (data.horarios && data.horarios.length > 0) {
+                            data.horarios.forEach(horario => {
+                                const opt = document.createElement('option');
+                                opt.value = horario.value;
+                                opt.textContent = horario.label;
+                                horaSelect.appendChild(opt);
+                            });
+                        } else {
+                            horaSelect.innerHTML = '<option value="">Sin horarios disponibles hoy (Sala llena)</option>';
+                            horaSelect.disabled = true;
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error fetching schedules:', err);
+                        horaSelect.innerHTML = '<option value="">Error cargando horarios</option>';
+                    });
+            }
+        }
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            const salaSelect = document.getElementById('id_sala');
+            const sucursalFilter = document.getElementById('sucursal_filter');
+            const fechaInput = document.getElementById('id_fecha');
+            
+            salaSelect.addEventListener('change', fetchHorariosDisponibles);
+            fechaInput.addEventListener('change', fetchHorariosDisponibles);
+            
+            const salaActual = salaSelect.value; 
+
+            let perteneceA = "";
+            if (salaActual) {
+                for (const sucId in salasPorSucursal) {
+                    if (salasPorSucursal[sucId].some(s => s.id === salaActual)) {
+                        perteneceA = sucId;
+                        break;
+                    }
+                }
+            }
+            
+            if (perteneceA) {
+                sucursalFilter.value = perteneceA;
+                actualizarSalas();
+                salaSelect.value = salaActual; 
+            } else {
+                actualizarSalas();
+            }
+        });
+    </script>
+</body>
+</html>

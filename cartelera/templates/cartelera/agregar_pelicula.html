@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agregar Película - Cinehub</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap"
+        rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=1.2">
+    <link rel="stylesheet" href="{% static 'css/agregar_pelicula.css' %}?v=1.2">
+</head>
+
+<body>
+    <header class="main-header">
+        <div class="container">
+            <h1 class="logo-text">
+                <a href="{% url 'cartelera' %}">
+                    <img src="{% static 'images/cinehub_logo.png' %}" alt="DTC GANG Logo" class="header-logo">
+                </a>
+            </h1>
+            <nav class="main-nav">
+                <ul style="align-items: center; display: flex; gap: 20px; list-style: none;">
+                    <li><a href="{% url 'cartelera' %}">Inicio</a></li>
+                    {% if request.session.usuario_id %}
+                        <!-- Menú privado para quienes tienen sesión iniciada -->
+                        {% if request.session.usuario_rol == 'ADMIN' or request.session.usuario_rol == 'EMPLEADO' %}
+                            <li><a href="{% url 'agregar_pelicula' %}" style="color:#ffb347; border-bottom: 1px dashed #ffb347; padding-bottom: 2px;">+ Agregar Peli</a></li>
+                            <li><a href="{% url 'agregar_funcion' %}" style="color:#ffb347; padding-bottom: 2px;">+ Prog. Función</a></li>
+                            <li><a href="{% url 'generos' %}" style="color:#ffb347; padding-bottom: 2px;">&#9823; Géneros</a></li>
+                        {% endif %}
+                        <li><span style="color:var(--white); font-weight:600; opacity: 0.9;">Hola, {{ request.session.usuario_nombre }}</span></li>
+                        <li><a href="{% url 'logout' %}" style="text-decoration:underline; font-size: 12px;">Salir</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="crud-container">
+            <h2 class="section-title">Agregar Nueva Película</h2>
+            <p style="margin-bottom: 20px; opacity: 0.8;">Busca la película por internet, el sistema rellenará los datos
+                ocultos.</p>
+
+            <!-- BUSCADOR TMDB -->
+            <div class="form-group">
+                <label>Paso 1: Buscar en TMDB por nombre</label>
+                <div class="search-box">
+                    <input type="text" id="tmdb_search_input" class="form-control"
+                        placeholder="Ej. Scream 6, Avatar, Titanic...">
+                    <button type="button" class="btn-primary" style="width: auto; padding: 0 20px;"
+                        onclick="buscarTMDB()">Buscar Web</button>
+                </div>
+                <div id="tmdb_results" class="tmdb-results"></div>
+            </div>
+
+            <hr style="margin: 30px 0; border: 0; border-top: 1px solid var(--border-color);">
+
+            <!-- FORMULARIO DJANGO -->
+            <form method="POST">
+                {% csrf_token %}
+                <label style="color:red; font-weight:bold; margin-bottom:10px; display:block;">Paso 2: Completa la
+                    información exclusiva de la sucursal</label>
+
+                <div class="two-columns">
+                    <div class="form-group">
+                        {{ form.clasificacion.label_tag }}
+                        {{ form.clasificacion }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.genero.label_tag }}
+                        {{ form.genero }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.idioma.label_tag }}
+                        {{ form.idioma }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.duracion_minutos.label_tag }}
+                        {{ form.duracion_minutos }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.costo_entrada.label_tag }}
+                        {{ form.costo_entrada }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.estatus.label_tag }}
+                        {{ form.estatus }}
+                    </div>
+                </div>
+
+                <!-- Campos ocultos/llenados automáticamente por el buscador -->
+                <div
+                    style="background:var(--bg-dark); padding: 15px; border-radius: 8px; border: 1px dashed var(--border-color); margin-top:20px;">
+                    <h4 style="margin-bottom:15px; color:var(--primary-orange);">Datos Obtenidos de TMDB (Solo Lectura)</h4>
+                    <div class="two-columns">
+                        <div class="form-group">
+                            {{ form.titulo.label_tag }}
+                            {{ form.titulo }}
+                        </div>
+                        <div class="form-group">
+                            {{ form.tmdb_id.label_tag }}
+                            {{ form.tmdb_id }}
+                        </div>
+                    </div>
+                    <div class="form-group" style="display:none;">
+                        {{ form.imagen_url }} <!-- Oculto para no ensuciar -->
+                    </div>
+                    <div class="form-group">
+                        {{ form.sinopsis.label_tag }}
+                        {{ form.sinopsis }}
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary btn-success">✅ Guardar Película en la Base de Datos</button>
+            </form>
+
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <div class="container">
+            <p>&copy; 2026 Cinehub - Backend Prototype</p>
+        </div>
+    </footer>
+
+    <!-- LÓGICA DE JAVASCRIPT PARA BUSCAR EN VIVO -->
+    <script>
+        function buscarTMDB() {
+            const query = document.getElementById('tmdb_search_input').value;
+            const resultsDiv = document.getElementById('tmdb_results');
+
+            if (!query) return;
+
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<div style="padding:15px;">Buscando en la nube...</div>';
+
+            // Llamamos a nuestra propia API secreta de Django
+            fetch(`/api/buscar_tmdb/?query=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    resultsDiv.innerHTML = '';
+                    if (data.results && data.results.length > 0) {
+                        data.results.forEach(movie => {
+                            const posterPath = movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : 'https://via.placeholder.com/50x75';
+                            const item = document.createElement('div');
+                            item.className = 'tmdb-result-item';
+                            item.innerHTML = `
+                            <img src="${posterPath}" alt="Póster">
+                            <div class="tmdb-result-info">
+                                <h4>${movie.title} (${movie.release_date ? movie.release_date.split('-')[0] : 'N/A'})</h4>
+                                <p>${movie.overview ? movie.overview.slice(0, 100) + '...' : 'Sin sinopsis disponible.'}</p>
+                            </div>
+                        `;
+                            // Evento clic: Autollenar los campos
+                            item.onclick = function () {
+                                document.getElementById('id_titulo').value = movie.title;
+                                document.getElementById('id_tmdb_id').value = movie.id;
+                                document.getElementById('id_sinopsis').value = movie.overview || 'Sin sinopsis';
+
+                                if (movie.poster_path) {
+                                    document.getElementById('id_imagen_url').value = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
+                                }
+
+                                // Limpiamos los resultados
+                                resultsDiv.style.display = 'none';
+                                resultsDiv.innerHTML = '';
+                                document.getElementById('tmdb_search_input').value = `Seleccionaste: ${movie.title}`;
+                            };
+                            resultsDiv.appendChild(item);
+                        });
+                    } else {
+                        resultsDiv.innerHTML = '<div style="padding:15px; color:red;">No se encontraron películas.</div>';
+                    }
+                })
+                .catch(err => {
+                    resultsDiv.innerHTML = '<div style="padding:15px; color:red;">Hubo un error al conectar.</div>';
+                    console.error(err);
+                });
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,19 @@
+# Entornos virtuales
+venv/
+env/
+.env
+
+# Archivos de caché y compilación de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Bases de datos locales
+db.sqlite3
+db.sqlite3-journal
+
+# Logs
+*.log
+*.pot
+*.pyc

@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprar Boletos - CineHub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=1.1">
+    <script src="https://www.paypal.com/sdk/js?client-id=test&currency=MXN&locale=es_MX&buyer-country=MX"></script>
+    <style>
+        .buy-container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+        .step { display: none; }
+        .step.active { display: block; }
+        .controls { display: flex; align-items: center; gap: 15px; margin: 20px 0; }
+        .btn-qty {
+            background: var(--primary-orange);
+            color: white;
+            border: none;
+            width: 40px; height: 40px;
+            border-radius: 8px;
+            font-size: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-qty:hover { background: var(--hover-orange); }
+        #qty-display { font-size: 24px; font-weight: bold; min-width: 30px; text-align: center; }
+        .summary {
+            background: var(--bg-dark);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 1px solid var(--border-color);
+        }
+        .total-price { font-size: 24px; color: var(--primary-orange); font-weight: bold; }
+        .screen {
+            background: #444;
+            height: 50px;
+            width: 100%;
+            margin: 20px 0;
+            border-radius: 25px 25px 0 0;
+            transform: perspective(200px) rotateX(-5deg);
+            box-shadow: 0 10px 20px rgba(255,255,255,0.1);
+            text-align: center;
+            color: #ccc;
+            line-height: 50px;
+            font-weight: bold;
+            letter-spacing: 5px;
+        }
+        .seat-map {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin: 30px 0;
+        }
+        .seat-row { display: flex; gap: 10px; }
+        .seat {
+            width: 35px; height: 35px;
+            background: #2a303c;
+            border: 2px solid var(--border-color);
+            border-radius: 8px 8px 2px 2px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+        .seat::after {
+            content: '';
+            position: absolute;
+            bottom: -6px; left: 5%;
+            width: 90%; height: 6px;
+            background: var(--border-color);
+            border-radius: 0 0 4px 4px;
+        }
+        .seat:hover { background: #4a5568; }
+        .seat.selected {
+            background: var(--primary-orange);
+            border-color: var(--primary-orange);
+        }
+        .seat.selected::after { background: var(--hover-orange); }
+        .seat.occupied {
+            background: #ff4d4d;
+            border-color: #cc0000;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .seat.occupied::after { background: #990000; }
+        .legend { display: flex; justify-content: center; gap: 20px; margin-top: 20px; font-size: 14px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-box { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--border-color); }
+        .seat-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 35px; height: 35px;
+            font-weight: bold;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        hr { border: 0; height: 1px; background: var(--border-color); margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <div class="container">
+            <h1 class="logo-text">
+                <a href="{% url 'cartelera' %}">
+                    <img src="{% static 'images/cinehub_logo.png' %}" alt="Cinehub Logo" class="header-logo">
+                </a>
+            </h1>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="{% url 'cartelera' %}">Inicio</a></li>
+                    {% if request.session.usuario_id %}
+                        <li><span class="nav-greeting">Hola, {{ request.session.usuario_nombre }}</span></li>
+                        <li><a href="{% url 'logout' %}" class="nav-link-logout">Salir</a></li>
+                    {% else %}
+                        <li><a href="{% url 'login' %}" class="nav-link-login">Iniciar Sesión</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="breadcrumb" style="margin-bottom: 20px; font-weight: 600;">
+            <a href="{% url 'detalle_pelicula' funcion.pelicula.id %}" style="color: var(--primary-orange); text-decoration: none;">← Volver a "{{ funcion.pelicula.titulo }}"</a>
+        </div>
+        <div class="buy-container">
+            <h2 style="color: var(--primary-orange); margin-bottom: 5px;">Comprar Boletos</h2>
+            <p><strong>Película:</strong> {{ funcion.pelicula.titulo }}</p>
+            <p><strong>Función:</strong> {{ funcion.fecha|date:"d M Y" }} a las {{ funcion.hora_inicio|time:"g:i A" }} - Sala {{ funcion.sala.numero }} ({{ funcion.sala.sucursal.nombre }})</p>
+            <hr>
+
+            <div id="step-1" class="step active">
+                <h3>Paso 1: Selecciona la cantidad de boletos</h3>
+                <p style="color: var(--text-muted); margin-top: 5px;">Precio por boleto: ${{ precio_boleto }} MXN</p>
+                <div class="controls">
+                    <button class="btn-qty" onclick="changeQty(-1)">-</button>
+                    <div id="qty-display">1</div>
+                    <button class="btn-qty" onclick="changeQty(1)">+</button>
+                </div>
+                <div class="summary">
+                    <p>Total a Pagar:</p>
+                    <div class="total-price">$<span id="total-display">32.00</span> MXN</div>
+                </div>
+                <button class="btn-primary" style="margin-top: 25px; width: 100%; font-size: 16px;" onclick="goToStep2()">Elegir Asientos →</button>
+            </div>
+
+            <div id="step-2" class="step">
+                <h3>Paso 2: Selecciona tus <span id="required-seats-display">1</span> asientos</h3>
+                <p style="color: var(--text-muted); margin-top: 5px;" id="missing-seats-msg">Faltan <span id="missing-seats">1</span> asientos por seleccionar.</p>
+                <div class="screen">PANTALLA</div>
+                <div class="seat-map" id="seat-map"></div>
+                <div class="legend">
+                    <div class="legend-item"><div class="legend-box" style="background:#2a303c;"></div> Disponible</div>
+                    <div class="legend-item"><div class="legend-box" style="background:var(--primary-orange); border-color:var(--primary-orange);"></div> Seleccionado</div>
+                    <div class="legend-item"><div class="legend-box" style="background:#ff4d4d; border-color:#cc0000; opacity:0.5;"></div> Ocupado</div>
+                </div>
+                <form method="POST" id="checkout-form" style="margin-top: 30px;">
+                    {% csrf_token %}
+                    <input type="hidden" name="asientos" id="asientos-input" value="">
+                    <div style="display: flex; gap: 15px;">
+                        <button type="button" class="btn-primary" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); flex: 1;" onclick="goToStep1()">← Regresar</button>
+                        <button type="button" class="btn-primary" id="btn-submit" disabled style="opacity: 0.5; cursor: not-allowed; flex: 1; transition: all 0.3s;" onclick="goToStep3()">Proceder al pago</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="step-3" class="step">
+                <h3>Paso 3: Realiza tu pago</h3>
+                <div class="summary">
+                    <p style="color: var(--text-muted);">Has seleccionado <span id="final-qty" style="color: var(--text-main); font-weight: bold;"></span> boletos.</p>
+                    <p>Total a Pagar:</p>
+                    <div class="total-price">$<span id="final-total"></span> MXN</div>
+                </div>
+                <div id="paypal-button-container" style="margin-top: 30px; margin-bottom: 20px; filter: invert(0.92) hue-rotate(180deg); opacity: 0.95;"></div>
+                <div style="display: flex; gap: 15px;">
+                    <button type="button" class="btn-primary" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); flex: 1;" onclick="goBackToStep2()">← Regresar a Asientos</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    {{ asientos_ocupados|json_script:"ocupados-data" }}
+    <script>
+        const pricePerTicket = parseFloat("{{ precio_boleto }}");
+        const occupiedSeats = JSON.parse(document.getElementById('ocupados-data').textContent) || [];
+        
+        let quantity = 1;
+        let selectedSeats = [];
+
+        const qtyDisplay = document.getElementById('qty-display');
+        const totalDisplay = document.getElementById('total-display');
+        
+        const seatMap = document.getElementById('seat-map');
+        const requiredSeatsDisplay = document.getElementById('required-seats-display');
+        const missingSeatsDisplay = document.getElementById('missing-seats');
+        const missingSeatsMsg = document.getElementById('missing-seats-msg');
+        const asientosInput = document.getElementById('asientos-input');
+        const btnSubmit = document.getElementById('btn-submit');
+
+        const rows = ['A', 'B', 'C', 'D', 'E', 'F'];
+        const cols = 8;
+        
+        function initMap() {
+            seatMap.innerHTML = '';
+            
+            // Fila superior para los números de columna
+            const headerRow = document.createElement('div');
+            headerRow.className = 'seat-row';
+            
+            // Esquina vacía (arriba a la izquierda)
+            const emptyCorner = document.createElement('div');
+            emptyCorner.className = 'seat-label';
+            headerRow.appendChild(emptyCorner);
+            
+            for (let c = 1; c <= cols; c++) {
+                const colLabel = document.createElement('div');
+                colLabel.className = 'seat-label';
+                colLabel.innerText = c;
+                headerRow.appendChild(colLabel);
+            }
+            seatMap.appendChild(headerRow);
+
+            for (let r = 0; r < rows.length; r++) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'seat-row';
+                
+                // Etiqueta lateral para la fila (A, B, C...)
+                const rowLabel = document.createElement('div');
+                rowLabel.className = 'seat-label';
+                rowLabel.innerText = rows[r];
+                rowDiv.appendChild(rowLabel);
+
+                for (let c = 1; c <= cols; c++) {
+                    const seatId = rows[r] + c;
+                    const seatDiv = document.createElement('div');
+                    seatDiv.className = 'seat';
+                    seatDiv.dataset.id = seatId;
+                    seatDiv.title = seatId;
+                    
+                    if (occupiedSeats.includes(seatId)) {
+                        seatDiv.classList.add('occupied');
+                    } else {
+                        seatDiv.addEventListener('click', () => toggleSeat(seatDiv, seatId));
+                    }
+                    rowDiv.appendChild(seatDiv);
+                }
+                seatMap.appendChild(rowDiv);
+            }
+        }
+
+        function toggleSeat(elem, seatId) {
+            if (elem.classList.contains('selected')) {
+                elem.classList.remove('selected');
+                selectedSeats = selectedSeats.filter(id => id !== seatId);
+            } else {
+                if (selectedSeats.length >= quantity) {
+                    const removedSeatId = selectedSeats.shift();
+                    const removedSeatElem = document.querySelector(`.seat[data-id='${removedSeatId}']`);
+                    if (removedSeatElem) removedSeatElem.classList.remove('selected');
+                }
+                elem.classList.add('selected');
+                selectedSeats.push(seatId);
+            }
+            updateSeatStatus();
+        }
+
+        function updateSeatStatus() {
+            const missing = quantity - selectedSeats.length;
+            if (missingSeatsDisplay) missingSeatsDisplay.innerText = missing;
+            
+            if (missing === 0) {
+                missingSeatsMsg.innerHTML = '<span style="color: #4ade80; font-weight: bold;">¡Asientos seleccionados correctamente!</span>';
+                btnSubmit.disabled = false;
+                btnSubmit.style.opacity = '1';
+                btnSubmit.style.cursor = 'pointer';
+                asientosInput.value = selectedSeats.join(',');
+            } else {
+                missingSeatsMsg.innerHTML = `Faltan <span id="missing-seats">${missing}</span> asientos por seleccionar.`;
+                btnSubmit.disabled = true;
+                btnSubmit.style.opacity = '0.5';
+                btnSubmit.style.cursor = 'not-allowed';
+                asientosInput.value = '';
+            }
+        }
+
+        function changeQty(delta) {
+            quantity += delta;
+            if (quantity < 1) quantity = 1;
+            if (quantity > 10) quantity = 10;
+            
+            qtyDisplay.innerText = quantity;
+            totalDisplay.innerText = (quantity * pricePerTicket).toFixed(2);
+        }
+
+        function goToStep2() {
+            document.getElementById('step-1').classList.remove('active');
+            document.getElementById('step-2').classList.add('active');
+            requiredSeatsDisplay.innerText = quantity;
+            selectedSeats = [];
+            document.querySelectorAll('.seat.selected').forEach(s => s.classList.remove('selected'));
+            updateSeatStatus();
+        }
+
+        function goToStep1() {
+            document.getElementById('step-2').classList.remove('active');
+            document.getElementById('step-1').classList.add('active');
+        }
+
+        function goBackToStep2() {
+            document.getElementById('step-3').classList.remove('active');
+            document.getElementById('step-2').classList.add('active');
+        }
+
+        function goToStep3() {
+            document.getElementById('step-2').classList.remove('active');
+            document.getElementById('step-3').classList.add('active');
+            
+            document.getElementById('final-qty').innerText = quantity;
+            const finalTotal = (quantity * pricePerTicket).toFixed(2);
+            document.getElementById('final-total').innerText = finalTotal;
+            
+            document.getElementById('paypal-button-container').innerHTML = '';
+            
+            paypal.Buttons({
+                style: {
+                    color:  'gold',
+                    shape:  'rect',
+                    label:  'pay'
+                },
+                createOrder: function(data, actions) {
+                    return actions.order.create({
+                        purchase_units: [{
+                            amount: {
+                                value: finalTotal
+                            }
+                        }]
+                    });
+                },
+                onApprove: function(data, actions) {
+                    // Finalizamos captura y mandamos el formulario para BD
+                    return actions.order.capture().then(function(details) {
+                        document.getElementById('checkout-form').submit();
+                    });
+                }
+            }).render('#paypal-button-container');
+        }
+
+        initMap();
+    </script>
+</body>
+</html>

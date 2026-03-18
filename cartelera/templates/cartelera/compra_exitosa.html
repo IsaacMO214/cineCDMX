@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¡Compra Exitosa! - CineHub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=1.1">
+    <style>
+        .success-box {
+            max-width: 600px;
+            margin: 60px auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        .success-icon {
+            font-size: 60px;
+            color: #4ade80;
+            margin-bottom: 20px;
+        }
+        .ticket-info {
+            background: var(--bg-dark);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px dashed var(--border-color);
+            text-align: left;
+        }
+        .ticket-info h3 {
+            color: var(--primary-orange);
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .ticket-info p {
+            margin: 10px 0;
+            color: var(--text-main);
+        }
+        .seats-tag {
+            background: var(--primary-orange);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 5px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <div class="container">
+            <h1 class="logo-text">
+                <a href="{% url 'cartelera' %}">
+                    <img src="{% static 'images/cinehub_logo.png' %}" alt="Cinehub Logo" class="header-logo">
+                </a>
+            </h1>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="success-box">
+            <div class="success-icon">✓</div>
+            <h2 style="color: var(--text-main); margin-bottom: 15px;">¡Compra Confirmada!</h2>
+            <p style="color: var(--text-muted);">Tus boletos han sido comprados y reservados con éxito. Presenta este comprobante en la entrada.</p>
+            
+            <div class="ticket-info">
+                <h3>🎬 {{ funcion.pelicula.titulo }}</h3>
+                <hr style="border-color: var(--border-color);">
+                <p><strong>📅 Fecha y Hora:</strong> {{ funcion.fecha|date:"d M Y" }} - {{ funcion.hora_inicio|time:"g:i A" }}</p>
+                <p><strong>📍 Sucursal:</strong> {{ funcion.sala.sucursal.nombre }} (Sala {{ funcion.sala.numero }})</p>
+                <div style="margin-top: 20px; text-align: center;">
+                    <p style="margin-bottom: 10px;"><strong>Asientos Asignados:</strong></p>
+                    {% for asiento in asientos %}
+                        <span class="seats-tag">{{ asiento }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <a href="{% url 'cartelera' %}" class="btn-primary" style="display: inline-block; padding: 12px 30px; text-decoration: none; margin-top: 15px; width: 100%;">Volver al Inicio</a>
+        </div>
+    </div>
+</body>
+</html>

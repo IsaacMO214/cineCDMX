@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cartelera Cinehub</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap"
+        rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+
+    <header class="main-header">
+        <div class="container">
+            <h1 class="logo-text">
+                <img src="{% static 'images/cinehub_logo.png' %}" alt="DTC GANG Logo" class="header-logo">
+            </h1>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="{% url 'cartelera' %}">Inicio</a></li>
+                    {% if request.session.usuario_id %}
+                    {% if request.session.usuario_rol == 'EMPLEADO' %}
+                    <li><a href="{% url 'agregar_pelicula' %}" class="nav-link-admin">+ Agregar Peli</a></li>
+                    <li><a href="{% url 'agregar_funcion' %}" class="nav-link-admin">+ Prog. Función</a></li>
+                    <li><a href="{% url 'generos' %}" class="nav-link-admin">&#9823; Géneros</a></li>
+                    {% elif request.session.usuario_rol == 'ADMIN' %}
+                    <li><a href="{% url 'usuarios' %}" class="nav-link-admin">&#128101; Usuarios</a></li>
+                    {% endif %}
+                    <li><span class="nav-greeting">Hola, {{ request.session.usuario_nombre }}</span></li>
+                    <li><a href="{% url 'logout' %}" class="nav-link-logout">Salir</a></li>
+                    {% else %}
+                    <li><a href="{% url 'login' %}" class="nav-link-login">Iniciar Sesión</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="cartelera-section container">
+        <h2 class="section-title">Cartelera Disponible</h2>
+
+        <div class="branch-selector">
+            <label for="sucursal">Selecciona tu sucursal:</label>
+            <select id="sucursal" name="sucursal" class="branch-select"
+                onchange="if(this.value) window.location.href='?sucursal='+this.value">
+                <option value="" {% if not sucursal_seleccionada %}selected{% endif %}>Todas las sucursales...</option>
+                {% for sucursal in sucursales %}
+                <option value="{{ sucursal.id }}" {% if sucursal.id|stringformat:"s" == sucursal_seleccionada %}selected{% endif %}>
+                    {{ sucursal.nombre }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="gallery-grid">
+
+            {% for pelicula in peliculas %}
+            <article class="movie-card">
+                <div class="poster-container" style="position: relative;">
+                    {% if pelicula.imagen_url %}
+                    <img src="{{ pelicula.imagen_url }}" class="poster" alt="Póster de {{ pelicula.titulo }}">
+                    {% else %}
+                    <img src="https://via.placeholder.com/266x400/333/fff?text=Poster+" class="poster"
+                        alt="Sin Póster Carga">
+                    {% endif %}
+
+                    {% if pelicula.estatus == 'PROXIMAMENTE' %}
+                    <div
+                        style="position: absolute; top: 12px; left: 0; background: linear-gradient(90deg, #7b2ff7, #f107a3); color: white; font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 0 6px 6px 0; letter-spacing: 1px; text-transform: uppercase; box-shadow: 2px 2px 8px rgba(0,0,0,0.3);">
+                        🔜 Próximamente
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-info">
+                    <h3 class="movie-title">{{ pelicula.titulo }}</h3>
+                    <p class="movie-genre">{{ pelicula.genero.nombre }}</p>
+                    <p class="movie-synopsis"
+                        style="font-size: 13px; opacity: 0.8; margin-bottom: 15px; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
+                        {{ pelicula.sinopsis }}
+                    </p>
+                    <div class="movie-schedule">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <span>
+                            {% for funcion in pelicula.funciones.all %}
+                            {{ funcion.hora_inicio|time:"H:i" }}
+                            {% if not forloop.last %} - {% endif %}
+                            {% endfor %}
+                        </span>
+                    </div>
+                    {% if request.session.usuario_rol == 'EMPLEADO' %}
+                    <a href="{% url 'detalle_pelicula' pelicula.id %}" class="btn-primary"
+                        style="display:block; text-align:center; text-decoration:none; padding:10px 0; background-color:#f0a500;">
+                        ⚙️ Gestionar
+                    </a>
+                    {% elif pelicula.estatus == 'PROXIMAMENTE' %}
+                    <span
+                        style="display: block; text-align: center; padding: 10px 0; background: #ccc; color: #666; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: not-allowed;">
+                        🕔 Disponible pronto
+                    </span>
+                    {% else %}
+                    <a href="{% url 'detalle_pelicula' pelicula.id %}{% if sucursal_seleccionada %}?sucursal={{ sucursal_seleccionada }}{% endif %}"
+                        class="btn-primary"
+                        style="display:block; text-align:center; text-decoration:none; padding:10px 0;">Comprar
+                        entradas</a>
+                    {% endif %}
+                </div>
+            </article>
+            {% empty %}
+            <p>No hay películas disponibles por el momento.</p>
+            {% endfor %}
+
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <div class="container">
+            <p>&copy; 2026 DTC GANG V3. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+</body>
+
+</html>

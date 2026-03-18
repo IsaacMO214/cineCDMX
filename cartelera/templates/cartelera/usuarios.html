@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Usuarios - Cinehub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/agregar_pelicula.css' %}">
+    <style>
+        .usuarios-layout { display: grid; grid-template-columns: 1fr 380px; gap: 30px; margin-top: 30px; align-items: start; }
+        @media (max-width: 768px) { .usuarios-layout { grid-template-columns: 1fr; } }
+        .panel { 
+            background: var(--card-bg); 
+            border-radius: 12px; 
+            padding: 25px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4); 
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+        .panel-sticky { position: sticky; top: 100px; }
+        .panel-titulo { 
+            font-size: 18px; 
+            font-weight: 700; 
+            color: var(--text-main); 
+            margin-bottom: 20px; 
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .panel-titulo::after {
+            content: '';
+            flex-grow: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+        .usuarios-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        .usuarios-table th { 
+            background-color: var(--bg-dark); 
+            color: var(--primary-orange); 
+            padding: 12px 15px; 
+            text-align: left; 
+            font-size: 12px; 
+            letter-spacing: 0.5px; 
+            text-transform: uppercase; 
+            border-bottom: 2px solid var(--border-color);
+        }
+        .usuarios-table th:last-child { text-align: center; }
+        .usuarios-table td { 
+            padding: 15px; 
+            border-bottom: 1px solid var(--border-color); 
+            font-size: 13px; 
+            vertical-align: middle; 
+            color: var(--text-main);
+        }
+        .usuarios-table tr:hover td { background: rgba(255,255,255,0.02); }
+        .usuarios-table tr:last-child td { border-bottom: none; }
+        .badge-rol { padding: 4px 11px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+        .badge-ADMIN    { background: rgba(211, 84, 0, 0.15); color: #e67e22; }
+        .badge-EMPLEADO { background: rgba(30, 132, 73, 0.15); color: #2ecc71; }
+        .badge-CLIENTE  { background: rgba(26, 82, 118, 0.15); color: #3498db; }
+        .acciones-td { display: flex; gap: 8px; justify-content: center; }
+        .btn-editar   { 
+            background: var(--primary-orange); 
+            color: white; 
+            border: none; 
+            padding: 6px 11px; 
+            border-radius: 6px; 
+            font-size: 12px; 
+            text-decoration: none; 
+            cursor: pointer; 
+            transition: all 0.2s;
+        }
+        .btn-editar:hover { background: var(--hover-orange); transform: translateY(-2px); }
+        .btn-eliminar { 
+            background: transparent; 
+            color: var(--text-muted); 
+            border: 1px solid var(--border-color); 
+            padding: 6px 11px; 
+            border-radius: 6px; 
+            font-size: 12px; 
+            cursor: pointer; 
+            transition: all 0.2s;
+        }
+        .btn-eliminar:hover { background: #e74c3c; color: white; border-color: #e74c3c; transform: translateY(-2px); }
+        .editando-banner { 
+            background: rgba(249, 115, 22, 0.1); 
+            color: var(--primary-orange); 
+            padding: 10px 15px; 
+            border-radius: 8px; 
+            font-size: 13px; 
+            font-weight: 700; 
+            margin-bottom: 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border: 1px dashed var(--primary-orange);
+        }
+        .editando-banner a { color: var(--text-main); text-decoration: none; font-size: 16px; }
+        .alert-error { 
+            background: rgba(231, 76, 60, 0.1); 
+            border-left: 4px solid #e74c3c; 
+            color: #ff9999; 
+            padding: 15px; 
+            border-radius: 5px; 
+            margin-bottom: 25px; 
+            font-size: 14px; 
+        }
+        .self-row td { background-color: rgba(255, 255, 255, 0.03) !important; }
+    </style>
+</head>
+
+<body>
+    <header class="main-header">
+        <div class="container">
+            <h1 class="logo-text">
+                <a href="{% url 'cartelera' %}">
+                    <img src="{% static 'images/cinehub_logo.png' %}" alt="Cinehub Logo" class="header-logo">
+                </a>
+            </h1>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="{% url 'cartelera' %}">Cartelera</a></li>
+                    <li><a href="{% url 'usuarios' %}" class="nav-link-admin" style="border-bottom: 1px dashed #ffb347;">👥 Usuarios</a></li>
+                    <li><span class="nav-greeting">Hola, {{ request.session.usuario_nombre }}</span></li>
+                    <li><a href="{% url 'logout' %}" class="nav-link-logout">Salir</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div style="margin-top: 20px;">
+            <a href="{% url 'cartelera' %}" style="color: var(--primary-orange); text-decoration: none; font-weight: 600;">← Volver a la cartelera</a>
+        </div>
+        <h2 class="section-title" style="margin-top: 15px;">Gestión de Usuarios</h2>
+
+        {% if error_eliminar %}
+        <div class="alert-error">⚠️ {{ error_eliminar }}</div>
+        {% endif %}
+
+        <div class="usuarios-layout">
+
+            <!-- TABLA DE USUARIOS -->
+            <div class="panel">
+                <p class="panel-titulo">👥 Usuarios del sistema ({{ usuarios|length }})</p>
+                {% if usuarios %}
+                <table class="usuarios-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Correo</th>
+                            <th>Rol</th>
+                            <th>Sucursal</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in usuarios %}
+                        <tr {% if u.id == request.session.usuario_id %}class="self-row"{% endif %}
+                            {% if editando and editando.id == u.id %}style="background-color:rgba(249, 115, 22, 0.1); border-left: 2px solid var(--primary-orange);"{% endif %}>
+                            <td><strong style="color:white;">{{ u.nombre }}</strong>{% if u.id == request.session.usuario_id %} <span style="font-size:10px;color:var(--text-muted);">(tú)</span>{% endif %}</td>
+                            <td style="font-size:12px; color:var(--text-muted);">{{ u.correo }}</td>
+                            <td><span class="badge-rol badge-{{ u.rol }}">{{ u.get_rol_display }}</span></td>
+                            <td style="font-size:12px; color:var(--text-muted);">{{ u.sucursal.nombre|default:"—" }}</td>
+                            <td>
+                                <div class="acciones-td">
+                                    <a href="{% url 'editar_usuario' u.id %}" class="btn-editar">✏️</a>
+                                    {% if u.id != request.session.usuario_id %}
+                                    <form method="POST" action="{% url 'eliminar_usuario' u.id %}" style="display:inline;"
+                                          onsubmit="return confirm('¿Eliminar al usuario «{{ u.nombre }}»?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-eliminar">🗑️</button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                    <p style="margin-top:20px; opacity:0.6; text-align:center;">No hay usuarios registrados.</p>
+                {% endif %}
+            </div>
+
+            <!-- FORMULARIO -->
+            <div class="panel panel-sticky">
+                {% if editando %}
+                    <div class="editando-banner">
+                        <span>✏️ Editando: {{ editando.nombre }}</span>
+                        <a href="{% url 'usuarios' %}">✕ Cancelar</a>
+                    </div>
+                    <p class="panel-titulo">Modificar Usuario</p>
+                {% else %}
+                    <p class="panel-titulo">➕ Nuevo Usuario</p>
+                {% endif %}
+
+                {% if form.errors %}
+                <div class="alert-error">
+                    {% for field in form %}{% for error in field.errors %}<p>{{ field.label }}: {{ error }}</p>{% endfor %}{% endfor %}
+                </div>
+                {% endif %}
+
+                <form method="POST" action="{% if editando %}{% url 'editar_usuario' editando.id %}{% else %}{% url 'usuarios' %}{% endif %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label style="font-weight:600; color:var(--primary-orange); display:block; margin-bottom:5px;">Nombre completo</label>
+                        {{ form.nombre }}
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight:600; color:var(--primary-orange); display:block; margin-bottom:5px;">Correo electrónico</label>
+                        {{ form.correo }}
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight:600; color:var(--primary-orange); display:block; margin-bottom:5px;">Contraseña</label>
+                        {{ form.password }}
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight:600; color:var(--primary-orange); display:block; margin-bottom:5px;">Rol</label>
+                        {{ form.rol }}
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight:600; color:var(--primary-orange); display:block; margin-bottom:5px;">Sucursal asignada</label>
+                        {{ form.sucursal }}
+                    </div>
+                    <button type="submit" class="btn-primary" style="margin-top:20px; padding:12px; width:100%; font-size:15px;">
+                        {% if editando %}💾 Guardar cambios{% else %}✅ Registrar Usuario{% endif %}
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <div class="container">
+            <p>&copy; 2026 Cine CDMX - Panel de Gerencia</p>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar {{ pelicula.titulo }} - Cinehub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/agregar_pelicula.css' %}">
+</head>
+
+<body>
+    <header class="main-header">
+        <div class="container">
+            <h1 class="logo-text">
+                <a href="{% url 'cartelera' %}">
+                    <img src="{% static 'images/cinehub_logo.png' %}" alt="Cinehub Logo" class="header-logo">
+                </a>
+            </h1>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="{% url 'cartelera' %}">Inicio</a></li>
+                    {% if request.session.usuario_id %}
+                        {% if request.session.usuario_rol == 'ADMIN' or request.session.usuario_rol == 'EMPLEADO' %}
+                            <li><a href="{% url 'agregar_pelicula' %}" class="nav-link-admin">+ Agregar Peli</a></li>
+                            <li><a href="{% url 'agregar_funcion' %}" class="nav-link-admin">+ Prog. Función</a></li>
+                        {% endif %}
+                        <li><span class="nav-greeting">Hola, {{ request.session.usuario_nombre }}</span></li>
+                        <li><a href="{% url 'logout' %}" class="nav-link-logout">Salir</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="crud-container">
+            <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <a href="{% url 'detalle_pelicula' pelicula.id %}" style="color: var(--deep-blue); text-decoration: none; font-weight: 600;">← Volver al detalle</a>
+                {% if pelicula.imagen_url %}
+                    <img src="{{ pelicula.imagen_url }}" alt="Póster" style="height: 60px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                {% endif %}
+                <h2 class="section-title" style="margin: 0;">Editar: {{ pelicula.titulo }}</h2>
+            </div>
+
+            {% if form.errors %}
+                <div style="background-color: #fee; border-left: 4px solid #c00; color: #c00; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+                    <strong>Revisa los siguientes errores:</strong>
+                    <ul style="margin-top: 5px; margin-bottom: 0;">
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li>{{ field.label }}: {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="two-columns">
+                    <!-- Columna izquierda -->
+                    <div>
+                        <div class="form-group">
+                            <label for="{{ form.titulo.id_for_label }}">Título</label>
+                            {{ form.titulo }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.clasificacion.id_for_label }}">Clasificación</label>
+                            {{ form.clasificacion }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.genero.id_for_label }}">Género</label>
+                            {{ form.genero }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.idioma.id_for_label }}">Idioma</label>
+                            {{ form.idioma }}
+                        </div>
+                    </div>
+
+                    <!-- Columna derecha -->
+                    <div>
+                        <div class="form-group">
+                            <label for="{{ form.duracion_minutos.id_for_label }}">Duración (min)</label>
+                            {{ form.duracion_minutos }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.costo_entrada.id_for_label }}">Costo de entrada ($)</label>
+                            {{ form.costo_entrada }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.estatus.id_for_label }}">Estatus</label>
+                            {{ form.estatus }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.tmdb_id.id_for_label }}">ID TMDB</label>
+                            {{ form.tmdb_id }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.sinopsis.id_for_label }}">Sinopsis</label>
+                    {{ form.sinopsis }}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.imagen_url.id_for_label }}">Póster URL</label>
+                    {{ form.imagen_url }}
+                </div>
+
+                <div style="display: flex; gap: 15px; margin-top: 25px;">
+                    <button type="submit" class="btn-primary" style="flex: 1; padding: 14px; font-size: 16px;">
+                        💾 Guardar cambios
+                    </button>
+                    <a href="{% url 'detalle_pelicula' pelicula.id %}" 
+                       style="flex: 0 0 auto; padding: 14px 25px; border: 2px solid #ccc; border-radius: 6px; color: #666; text-decoration: none; font-weight: 600; font-size: 16px; display: inline-flex; align-items: center;">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <div class="container">
+            <p>&copy; 2026 Cine CDMX - Panel de Gerencia</p>
+        </div>
+    </footer>
+</body>
+
+</html>

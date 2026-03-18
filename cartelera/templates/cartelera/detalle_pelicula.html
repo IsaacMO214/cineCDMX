@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ pelicula.titulo }} - Cinehub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=1.1">
+    <link rel="stylesheet" href="{% static 'css/detalle_pelicula.css' %}?v=1.1">
+</head>
+
+<body>
+    <header class="main-header">
+        <div class="container">
+            <h1 class="logo-text">
+                <a href="{% url 'cartelera' %}">
+                    <img src="{% static 'images/cinehub_logo.png' %}" alt="Cinehub Logo" class="header-logo">
+                </a>
+            </h1>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="{% url 'cartelera' %}">Inicio</a></li>
+                    
+                    {% if request.session.usuario_id %}
+                        {% if request.session.usuario_rol == 'EMPLEADO' %}
+                            <li><a href="{% url 'agregar_pelicula' %}" class="nav-link-admin">+ Agregar Peli</a></li>
+                            <li><a href="{% url 'agregar_funcion' %}" class="nav-link-admin">+ Prog. Función</a></li>
+                            <li><a href="{% url 'generos' %}" class="nav-link-admin">&#9823; Géneros</a></li>
+                        {% elif request.session.usuario_rol == 'ADMIN' %}
+                            <li><a href="{% url 'usuarios' %}" class="nav-link-admin">&#128101; Usuarios</a></li>
+                        {% endif %}
+                        <li><span class="nav-greeting">Hola, {{ request.session.usuario_nombre }}</span></li>
+                        <li><a href="{% url 'logout' %}" class="nav-link-logout">Salir</a></li>
+                    {% else %}
+                        <li><a href="{% url 'login' %}" class="nav-link-login">Iniciar Sesión</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        
+        <div class="breadcrumb">
+            <a href="{% url 'cartelera' %}">← Volver a la cartelera</a>
+        </div>
+
+        <section class="detalle-container">
+            
+            <!-- SECCIÓN IZQUIERDA: PÓSTER -->
+            <div class="detalle-poster">
+                {% if pelicula.imagen_url %}
+                    <img src="{{ pelicula.imagen_url }}" alt="Póster de {{ pelicula.titulo }}">
+                {% else %}
+                    <img src="https://via.placeholder.com/400x600?text=Sin+Imagen" alt="Póster no disponible">
+                {% endif %}
+            </div>
+
+            <!-- SECCIÓN DERECHA: INFORMACIÓN -->
+            <div class="detalle-info">
+                <h1 class="detalle-titulo">{{ pelicula.titulo }}</h1>
+                
+                {% if request.session.usuario_rol == 'EMPLEADO' %}
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                    <a href="{% url 'editar_pelicula' pelicula.id %}" 
+                       style="display: inline-block; padding: 8px 18px; background-color: #f0a500; color: white; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 13px;">
+                        ✏️ Editar Película
+                    </a>
+                    <form method="POST" action="{% url 'eliminar_pelicula' pelicula.id %}"
+                          onsubmit="return confirm('\u00bfEliminar permanentemente Esta acción borra también todas sus funciones programadas y no se puede deshacer.')">
+                        {% csrf_token %}
+                        <button type="submit" style="padding: 8px 18px; background-color: #e74c3c; color: white; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer;">
+                            🗑️ Eliminar Película
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+                
+                <div class="detalle-badge-container">
+                    <span class="detalle-badge badge-clasificacion">{{ pelicula.get_clasificacion_display }}</span>
+                    <span class="detalle-badge">⏱️ {{ pelicula.duracion_minutos }} min</span>
+                    <span class="detalle-badge">🎭 {{ pelicula.genero.nombre }}</span>
+                    <span class="detalle-badge">🗣️ {{ pelicula.idioma }}</span>
+                </div>
+
+                <div class="detalle-meta">
+                    <p><strong>Costo de entrada:</strong> ${{ pelicula.costo_entrada }} MXN</p>
+                    <p><strong>Estatus:</strong> {{ pelicula.get_estatus_display }}</p>
+                </div>
+
+                <h3 class="detalle-sinopsis-titulo">Sinopsis Oficial</h3>
+                <p class="detalle-sinopsis-texto">
+                    {{ pelicula.sinopsis }}
+                </p>
+
+                <!-- SECCIÓN DE HORARIOS / PRÓXIMAMENTE -->
+                {% if pelicula.estatus == 'PROXIMAMENTE' %}
+                    <div class="proximamente-block">
+                        <div class="proximamente-icon">🎬</div>
+                        <h3>Próximamente en Cine CDMX</h3>
+                        <p>Esta película aún no tiene funciones programadas.<br>¡Mantente atento a nuestra cartelera!</p>
+                        <a href="{% url 'cartelera' %}" class="btn-volver">← Ver cartelera completa</a>
+                    </div>
+
+                {% else %}
+                    <div class="horarios-section">
+                        <h3 class="detalle-sinopsis-titulo">Horarios Disponibles</h3>
+
+                        <div class="sucursal-filtro">
+                            <label for="sucursal-detalle">Filtrar por sucursal:</label>
+                            <select id="sucursal-detalle" class="sucursal-select"
+                                onchange="window.location.href='?sucursal=' + (this.value || '')">
+                                <option value="" {% if not sucursal_seleccionada %}selected{% endif %}>Todas las sucursales</option>
+                                {% for sucursal in sucursales %}
+                                <option value="{{ sucursal.id }}" {% if sucursal.id|stringformat:"s" == sucursal_seleccionada %}selected{% endif %}>
+                                    {{ sucursal.nombre }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        {% if funciones %}
+                            <div class="funciones-grid">
+                                {% for funcion in funciones %}
+                                <div class="funcion-card">
+                                    <p class="funcion-hora">{{ funcion.hora_inicio|time:"g:i A" }}</p>
+                                    <p class="funcion-sala">Sala {{ funcion.sala.numero }}</p>
+                                    <p class="funcion-sucursal">{{ funcion.sala.sucursal.nombre }}</p>
+                                    <p class="funcion-fecha">{{ funcion.fecha|date:"d M Y" }}</p>
+                                    <a href="{% url 'comprar_boletos' funcion.id %}" class="btn-comprar" style="display:block; text-align:center; text-decoration:none; margin-top:10px; padding:8px; box-sizing:border-box;">
+                                        Comprar
+                                    </a>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="funciones-vacio">
+                                <p>No hay funciones disponibles para esta selección. Intenta con otra sucursal o vuelve más tarde.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <footer class="main-footer">
+        <div class="container">
+            <p>&copy; 2026 Cinehub - Detalles de la Película</p>
+        </div>
+    </footer>
+</body>
+
+</html>
