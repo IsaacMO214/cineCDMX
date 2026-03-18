@@ -160,6 +160,21 @@
                                 document.getElementById('id_titulo').value = movie.title;
                                 document.getElementById('id_tmdb_id').value = movie.id;
                                 document.getElementById('id_sinopsis').value = movie.overview || 'Sin sinopsis';
+                                
+                                const duracionInput = document.getElementById('id_duracion_minutos');
+                                if (duracionInput) {
+                                    duracionInput.value = "";
+                                    duracionInput.placeholder = "Cargando...";
+                                    
+                                    fetch(`/api/detalles_tmdb/?tmdb_id=${movie.id}`)
+                                        .then(r => r.json())
+                                        .then(d => {
+                                            if(d.runtime) {
+                                                duracionInput.value = d.runtime;
+                                            }
+                                            duracionInput.placeholder = "";
+                                        });
+                                }
 
                                 if (movie.poster_path) {
                                     document.getElementById('id_imagen_url').value = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;

@@ -11,7 +11,7 @@ from .models import Pelicula, Sucursal, Usuario, Funcion, Genero, RolUsuario, Es
 
 def get_data_from_tmdb(tmdb_id):
     if not tmdb_id:
-        return None, None
+        return None, None, None
     api_key = str(settings.TMDB_API_KEY).strip(' "\'')
     url = f"https://api.themoviedb.org/3/movie/{tmdb_id}?api_key={api_key}&language=es-MX"
     try:
@@ -20,11 +20,12 @@ def get_data_from_tmdb(tmdb_id):
             data = response.json()
             poster_path = data.get("poster_path")
             sinopsis = data.get("overview")
+            runtime = data.get("runtime")
             poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None
-            return poster_url, sinopsis
+            return poster_url, sinopsis, runtime
     except Exception as e:
         print(f"Error conectando a TMDB: {e}")
-    return None, None
+    return None, None, None
 
 
 def cartelera_view(request):
@@ -59,14 +60,17 @@ def cartelera_view(request):
     peliculas = list(chain(peliculas_activas, peliculas_proximamente))
 
     for pelicula in peliculas:
-        if pelicula.tmdb_id and (not pelicula.imagen_url or not pelicula.sinopsis):
-            poster_url, sinopsis_api = get_data_from_tmdb(pelicula.tmdb_id)
+        if pelicula.tmdb_id and (not pelicula.imagen_url or not pelicula.sinopsis or not pelicula.duracion_minutos):
+            poster_url, sinopsis_api, duracion_api = get_data_from_tmdb(pelicula.tmdb_id)
             needs_save = False
             if poster_url and not pelicula.imagen_url:
                 pelicula.imagen_url = poster_url
                 needs_save = True
             if sinopsis_api and not pelicula.sinopsis:
                 pelicula.sinopsis = sinopsis_api
+                needs_save = True
+            if duracion_api and not pelicula.duracion_minutos:
+                pelicula.duracion_minutos = duracion_api
                 needs_save = True
             if needs_save:
                 pelicula.save()
@@ -92,6 +96,13 @@ def search_tmdb_view(request):
     except Exception as e:
         print(f"Error en buscador TMDB: {e}")
     return JsonResponse({'results': []})
+
+def detalles_tmdb_view(request):
+    tmdb_id = request.GET.get('tmdb_id')
+    if not tmdb_id:
+        return JsonResponse({'runtime': ''})
+    _, _, runtime = get_data_from_tmdb(tmdb_id)
+    return JsonResponse({'runtime': runtime})
 
 def horarios_disponibles_view(request):
     sala_id = request.GET.get('sala')
@@ -158,8 +169,22 @@ def agregar_pelicula_view(request):
     if request.method == 'POST':
         form = PeliculaForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect('cartelera')
+            pelicula = form.save()
+            if pelicula.tmdb_id:
+                poster_url, sinopsis_api, duracion_api = get_data_from_tmdb(pelicula.tmdb_id)
+                needs_save = False
+                if poster_url and not pelicula.imagen_url:
+                    pelicula.imagen_url = poster_url
+                    needs_save = True
+                if sinopsis_api and not pelicula.sinopsis:
+                    pelicula.sinopsis = sinopsis_api
+                    needs_save = True
+                if duracion_api and not pelicula.duracion_minutos:
+                    pelicula.duracion_minutos = duracion_api
+                    needs_save = True
+                if needs_save:
+                    pelicula.save()
+            return redirect('dashboard_empleado')
     else:
         form = PeliculaForm()
     return render(request, 'cartelera/agregar_pelicula.html', {'form': form})
