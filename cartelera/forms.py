@@ -10,6 +10,24 @@ class GeneroForm(forms.ModelForm):
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Acción, Comedia, Terror...'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.required = True
+
+    def clean_nombre(self):
+        nombre = self.cleaned_data.get('nombre', '')
+        if nombre is None: nombre = ''
+        nombre = nombre.strip().title()
+        if not nombre:
+            raise forms.ValidationError("Este campo es obligatorio y no puede estar vacío.")
+        if len(nombre) < 3:
+            raise forms.ValidationError("El nombre del género debe tener al menos 3 caracteres.")
+        if not any(c.isalpha() for c in nombre):
+            raise forms.ValidationError("El nombre del género debe contener letras.")
+        return nombre
+
+
 
 class SalaForm(forms.ModelForm):
     class Meta:
@@ -21,6 +39,44 @@ class SalaForm(forms.ModelForm):
             'filas': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 26}),
             'columnas': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.required = True
+
+
+    def clean_numero(self):
+        numero = self.cleaned_data.get('numero')
+        if numero is not None and numero <= 0:
+            raise forms.ValidationError("El número de sala debe ser mayor a 0.")
+        return numero
+
+    def clean_filas(self):
+        filas = self.cleaned_data.get('filas')
+        if filas is not None and (filas < 1 or filas > 26):
+            raise forms.ValidationError("El número de filas debe estar entre 1 y 26.")
+        return filas
+
+    def clean_columnas(self):
+        columnas = self.cleaned_data.get('columnas')
+        if columnas is not None and (columnas < 1 or columnas > 100):
+            raise forms.ValidationError("El número de columnas debe estar entre 1 y 100.")
+        return columnas
+
+    def clean(self):
+        cleaned_data = super().clean()
+        numero = cleaned_data.get('numero')
+        sucursal = cleaned_data.get('sucursal')
+        if numero and sucursal:
+            # Si estamos editando, excluirnos a nosotros mismos
+            qs = Sala.objects.filter(numero=numero, sucursal=sucursal)
+            if self.instance and self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError(f"Ya existe la sala {numero} en la sucursal {sucursal.nombre}.")
+        return cleaned_data
+
 
 
 class UsuarioForm(forms.ModelForm):
@@ -35,6 +91,42 @@ class UsuarioForm(forms.ModelForm):
             'rol':      forms.Select(attrs={'class': 'form-control'}),
             'sucursal': forms.Select(attrs={'class': 'form-control'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.required = True
+
+    def clean_nombre(self):
+        nombre = self.cleaned_data.get('nombre', '')
+        if nombre is None: nombre = ''
+        nombre = nombre.strip()
+        if not nombre:
+            raise forms.ValidationError("El nombre es obligatorio y no puede estar vacío.")
+        if len(nombre) < 3:
+            raise forms.ValidationError("El nombre debe tener al menos 3 caracteres.")
+        if not any(c.isalpha() for c in nombre):
+            raise forms.ValidationError("El nombre debe contener letras.")
+        return nombre
+
+    def clean_correo(self):
+        correo = self.cleaned_data.get('correo', '')
+        if correo is None: correo = ''
+        correo = correo.strip()
+        if not correo:
+            raise forms.ValidationError("El correo es obligatorio y no puede estar vacío.")
+        return correo
+
+    def clean_password(self):
+        password = self.cleaned_data.get('password', '')
+        if password is None: password = ''
+        password = password.strip()
+        if not password:
+            raise forms.ValidationError("La contraseña es obligatoria y no puede constar solo de espacios.")
+        if len(password) < 6:
+            raise forms.ValidationError("La contraseña debe tener al menos 6 caracteres.")
+        return password
+
 
 
 class PeliculaForm(forms.ModelForm):
@@ -59,6 +151,44 @@ class PeliculaForm(forms.ModelForm):
             'estatus':         forms.Select(attrs={'class': 'form-control'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.required = True
+
+    def clean_titulo(self):
+        titulo = self.cleaned_data.get('titulo', '')
+        if titulo is None: titulo = ''
+        titulo = titulo.strip()
+        if not titulo:
+            raise forms.ValidationError("El título es obligatorio y no puede estar vacío.")
+        return titulo
+
+    def clean_sinopsis(self):
+        sinopsis = self.cleaned_data.get('sinopsis', '')
+        if sinopsis is None: sinopsis = ''
+        sinopsis = sinopsis.strip()
+        if not sinopsis:
+            raise forms.ValidationError("La sinopsis es obligatoria y no puede estar vacía.")
+        return sinopsis
+
+    def clean_imagen_url(self):
+        imagen_url = self.cleaned_data.get('imagen_url', '')
+        if imagen_url is None: imagen_url = ''
+        imagen_url = imagen_url.strip()
+        if not imagen_url:
+            raise forms.ValidationError("La URL de la imagen es obligatoria.")
+        return imagen_url
+
+    def clean_duracion_minutos(self):
+        duracion = self.cleaned_data.get('duracion_minutos')
+        if duracion is None:
+            raise forms.ValidationError("La duración es obligatoria.")
+        if duracion < 1 or duracion > 500:
+            raise forms.ValidationError("La duración debe ser un número válido de minutos (1 - 500).")
+        return duracion
+
+
 
 class FuncionForm(forms.ModelForm):
     HORARIOS_CHOICES = [
@@ -79,6 +209,8 @@ class FuncionForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.required = True
         import datetime
         manana = (datetime.date.today() + datetime.timedelta(days=1)).strftime('%Y-%m-%d')
         self.fields['fecha'].widget.attrs['min'] = manana
