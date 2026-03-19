@@ -110,58 +110,40 @@
         const asientosInput = document.getElementById('asientos-input');
         const btnSubmit = document.getElementById('btn-submit');
 
-        const rowsCount = parseInt("{{ funcion.sala.filas|default:'6' }}");
-        const cols = parseInt("{{ funcion.sala.columnas|default:'8' }}");
-        const rows = [];
-        for(let i=0; i<rowsCount; i++) {
-            rows.push(String.fromCharCode(65 + i));
-        }
+        const totalSeats = parseInt("{{ funcion.sala.capacidad|default:'50' }}");
+        const seatsPerRow = 10;
         
         function initMap() {
             seatMap.innerHTML = '';
             
-            // Fila superior para los números de columna
-            const headerRow = document.createElement('div');
-            headerRow.className = 'seat-row';
-            
-            // Esquina vacía (arriba a la izquierda)
-            const emptyCorner = document.createElement('div');
-            emptyCorner.className = 'seat-label';
-            headerRow.appendChild(emptyCorner);
-            
-            for (let c = 1; c <= cols; c++) {
-                const colLabel = document.createElement('div');
-                colLabel.className = 'seat-label';
-                colLabel.innerText = c;
-                headerRow.appendChild(colLabel);
-            }
-            seatMap.appendChild(headerRow);
+            let currentRowDiv = null;
 
-            for (let r = 0; r < rows.length; r++) {
-                const rowDiv = document.createElement('div');
-                rowDiv.className = 'seat-row';
-                
-                // Etiqueta lateral para la fila (A, B, C...)
-                const rowLabel = document.createElement('div');
-                rowLabel.className = 'seat-label';
-                rowLabel.innerText = rows[r];
-                rowDiv.appendChild(rowLabel);
-
-                for (let c = 1; c <= cols; c++) {
-                    const seatId = rows[r] + c;
-                    const seatDiv = document.createElement('div');
-                    seatDiv.className = 'seat';
-                    seatDiv.dataset.id = seatId;
-                    seatDiv.title = seatId;
-                    
-                    if (occupiedSeats.includes(seatId)) {
-                        seatDiv.classList.add('occupied');
-                    } else {
-                        seatDiv.addEventListener('click', () => toggleSeat(seatDiv, seatId));
-                    }
-                    rowDiv.appendChild(seatDiv);
+            for (let i = 1; i <= totalSeats; i++) {
+                // Crear nueva fila cada 10 asientos
+                if ((i - 1) % seatsPerRow === 0) {
+                    currentRowDiv = document.createElement('div');
+                    currentRowDiv.className = 'seat-row';
+                    seatMap.appendChild(currentRowDiv);
                 }
-                seatMap.appendChild(rowDiv);
+
+                const seatId = "Asiento " + i;
+                const seatDiv = document.createElement('div');
+                seatDiv.className = 'seat';
+                seatDiv.dataset.id = seatId;
+                seatDiv.title = seatId;
+                
+                // Texto dentro del asiento (opcional, para que sepa cuál es)
+                const seatNum = document.createElement('span');
+                seatNum.style.fontSize = '10px';
+                seatNum.innerText = i;
+                seatDiv.appendChild(seatNum);
+                
+                if (occupiedSeats.includes(seatId)) {
+                    seatDiv.classList.add('occupied');
+                } else {
+                    seatDiv.addEventListener('click', () => toggleSeat(seatDiv, seatId));
+                }
+                currentRowDiv.appendChild(seatDiv);
             }
         }
 

@@ -42,8 +42,7 @@ class Usuario(models.Model):
 class Sala(models.Model):
     numero   = models.IntegerField()
     sucursal = models.ForeignKey(Sucursal, on_delete=models.CASCADE, related_name='salas')
-    filas    = models.IntegerField(default=6)  # Ejemplo: 6 filas (A-F)
-    columnas = models.IntegerField(default=8)  # Ejemplo: 8 asientos por fila
+    capacidad = models.IntegerField(default=50)
 
     def __str__(self):
         return f"Sala {self.numero} - {self.sucursal.nombre}"

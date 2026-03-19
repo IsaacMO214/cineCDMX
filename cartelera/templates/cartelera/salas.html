@@ -62,7 +62,7 @@
                             <td style="color: var(--text-muted); font-size: 12px;">{{ sala.id }}</td>
                             <td><strong style="color: white;">Sala {{ sala.numero }}</strong></td>
                             <td>{{ sala.sucursal.nombre }}</td>
-                            <td>{{ sala.filas }} filas × {{ sala.columnas }} col</td>
+                            <td><strong>{{ sala.capacidad }} asientos</strong></td>
                             <td><span class="badge-peliculas">{{ sala.funcion_set.count }} función(es)</span></td>
                             <td>
                                 <div class="acciones-td">
@@ -117,16 +117,11 @@
                         <label for="{{ form.sucursal.id_for_label }}" style="font-weight: 600; display: block; margin-bottom: 6px; color: var(--primary-orange);">Sucursal</label>
                         {{ form.sucursal }}
                     </div>
-                    <div class="form-group" style="margin-top: 15px; display: flex; gap: 10px;">
-                        <div style="flex: 1;">
-                            <label for="{{ form.filas.id_for_label }}" style="font-weight: 600; display: block; margin-bottom: 6px; color: var(--primary-orange);">Letras (Filas)</label>
-                            {{ form.filas }}
-                        </div>
-                        <div style="flex: 1;">
-                            <label for="{{ form.columnas.id_for_label }}" style="font-weight: 600; display: block; margin-bottom: 6px; color: var(--primary-orange);">Asientos (Cols)</label>
-                            {{ form.columnas }}
-                        </div>
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label for="{{ form.capacidad.id_for_label }}" style="font-weight: 600; display: block; margin-bottom: 6px; color: var(--primary-orange);">Capacidad (Total de Asientos)</label>
+                        {{ form.capacidad }}
                     </div>
+
                     <button type="submit" class="btn-primary" style="margin-top: 20px; padding: 12px; width: 100%; font-size: 15px;">
                         {% if editando %}💾 Guardar cambios{% else %}✅ Registrar Sala{% endif %}
                     </button>

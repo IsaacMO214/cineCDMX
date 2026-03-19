@@ -32,12 +32,11 @@ class GeneroForm(forms.ModelForm):
 class SalaForm(forms.ModelForm):
     class Meta:
         model = Sala
-        fields = ['numero', 'sucursal', 'filas', 'columnas']
+        fields = ['numero', 'sucursal', 'capacidad']
         widgets = {
             'numero': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej. 1, 2, 3...'}),
             'sucursal': forms.Select(attrs={'class': 'form-control'}),
-            'filas': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 26}),
-            'columnas': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'capacidad': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 500}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -52,17 +51,11 @@ class SalaForm(forms.ModelForm):
             raise forms.ValidationError("El número de sala debe ser mayor a 0.")
         return numero
 
-    def clean_filas(self):
-        filas = self.cleaned_data.get('filas')
-        if filas is not None and (filas < 1 or filas > 26):
-            raise forms.ValidationError("El número de filas debe estar entre 1 y 26.")
-        return filas
-
-    def clean_columnas(self):
-        columnas = self.cleaned_data.get('columnas')
-        if columnas is not None and (columnas < 1 or columnas > 100):
-            raise forms.ValidationError("El número de columnas debe estar entre 1 y 100.")
-        return columnas
+    def clean_capacidad(self):
+        capacidad = self.cleaned_data.get('capacidad')
+        if capacidad is not None and (capacidad < 1 or capacidad > 500):
+            raise forms.ValidationError("La capacidad debe estar entre 1 y 500 asientos.")
+        return capacidad
 
     def clean(self):
         cleaned_data = super().clean()

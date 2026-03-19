@@ -61,6 +61,11 @@
     cursor: pointer;
     position: relative;
     transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #eee;
+    font-weight: 600;
 }
 .seat::after {
     content: '';
