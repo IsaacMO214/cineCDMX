@@ -12,6 +12,7 @@ urlpatterns = [
     path('funcion/<int:funcion_id>/comprar/', views.comprar_boletos_view, name='comprar_boletos'),
     path('pelicula/<int:pelicula_id>/editar/', views.editar_pelicula_view, name='editar_pelicula'),
     path('pelicula/<int:pelicula_id>/eliminar/', views.eliminar_pelicula_view, name='eliminar_pelicula'),
+    path('pelicula/<int:pelicula_id>/actualizar-tmdb/', views.actualizar_datos_tmdb_view, name='actualizar_tmdb'),
     path('api/buscar_tmdb/', views.search_tmdb_view, name='search_tmdb_api'),
     path('api/detalles_tmdb/', views.detalles_tmdb_view, name='detalles_tmdb_api'),
     path('api/horarios_disponibles/', views.horarios_disponibles_view, name='horarios_disponibles_api'),

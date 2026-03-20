@@ -59,21 +59,8 @@ def cartelera_view(request):
 
     peliculas = list(chain(peliculas_activas, peliculas_proximamente))
 
-    for pelicula in peliculas:
-        if pelicula.tmdb_id and (not pelicula.imagen_url or not pelicula.sinopsis or not pelicula.duracion_minutos):
-            poster_url, sinopsis_api, duracion_api = get_data_from_tmdb(pelicula.tmdb_id)
-            needs_save = False
-            if poster_url and not pelicula.imagen_url:
-                pelicula.imagen_url = poster_url
-                needs_save = True
-            if sinopsis_api and not pelicula.sinopsis:
-                pelicula.sinopsis = sinopsis_api
-                needs_save = True
-            if duracion_api and not pelicula.duracion_minutos:
-                pelicula.duracion_minutos = duracion_api
-                needs_save = True
-            if needs_save:
-                pelicula.save()
+    # Ya no hacemos el bucle que consulta a TMDB aquí para evitar lentitud y bloqueos en el inicio.
+    # Los datos se cargan al crear la película o manualmente desde el dashboard de empleado.
 
     context = {
         'peliculas': peliculas,
@@ -81,6 +68,30 @@ def cartelera_view(request):
         'sucursal_seleccionada': sucursal_id,
     }
     return render(request, 'cartelera/cartelera.html', context)
+
+def actualizar_datos_tmdb_view(request, pelicula_id):
+    if request.session.get('usuario_rol') != 'EMPLEADO':
+        return redirect('cartelera')
+    
+    from .models import Pelicula
+    from django.shortcuts import get_object_or_404
+    from django.contrib import messages
+    
+    pelicula = get_object_or_404(Pelicula, id=pelicula_id)
+    if pelicula.tmdb_id:
+        poster_url, sinopsis_api, duracion_api = get_data_from_tmdb(pelicula.tmdb_id)
+        if poster_url:
+            pelicula.imagen_url = poster_url
+        if sinopsis_api:
+            pelicula.sinopsis = sinopsis_api
+        if duracion_api:
+            pelicula.duracion_minutos = duracion_api
+        pelicula.save()
+        messages.success(request, f"Datos de '{pelicula.titulo}' actualizados desde TMDB exitosamente.")
+    else:
+        messages.warning(request, "Esta película no cuenta con un ID de TMDB configurado.")
+    
+    return redirect('dashboard_empleado')
 
 
 def search_tmdb_view(request):
