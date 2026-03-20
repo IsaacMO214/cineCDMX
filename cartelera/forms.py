@@ -53,8 +53,8 @@ class SalaForm(forms.ModelForm):
 
     def clean_capacidad(self):
         capacidad = self.cleaned_data.get('capacidad')
-        if capacidad is not None and (capacidad < 1 or capacidad > 500):
-            raise forms.ValidationError("La capacidad debe estar entre 1 y 500 asientos.")
+        if capacidad is not None and (capacidad < 25 or capacidad > 144):
+            raise forms.ValidationError("La capacidad debe estar entre 25 y 144 asientos.")
         return capacidad
 
     def clean(self):
