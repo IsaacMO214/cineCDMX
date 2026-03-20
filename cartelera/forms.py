@@ -36,7 +36,7 @@ class SalaForm(forms.ModelForm):
         widgets = {
             'numero': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej. 1, 2, 3...'}),
             'sucursal': forms.Select(attrs={'class': 'form-control'}),
-            'capacidad': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 500}),
+            'capacidad': forms.NumberInput(attrs={'class': 'form-control', 'min': 25, 'max': 144}),
         }
 
     def __init__(self, *args, **kwargs):
