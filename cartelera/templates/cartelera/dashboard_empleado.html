@@ -30,6 +30,23 @@
 
     <main class="dashboard-container container">
         <h2 class="section-title">Dashboard de Empleado</h2>
+        
+        <div class="branch-selector" style="margin-bottom: 25px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+            <label for="sucursal" style="font-weight: 600; color: #f0a500;">Filtrar vista por sucursal:</label>
+            <select id="sucursal" name="sucursal" class="branch-select" style="padding: 8px 12px; border-radius: 5px; background: #222; color: white; border: 1px solid #444;"
+                onchange="window.location.href='?sucursal='+this.value">
+                <option value="" {% if not sucursal_seleccionada %}selected{% endif %}>Todas las sucursales (Ver Todo)</option>
+                {% for sucursal in sucursales %}
+                <option value="{{ sucursal.id }}" {% if sucursal.id|stringformat:"s" == sucursal_seleccionada %}selected{% endif %}>
+                    {{ sucursal.nombre }}
+                </option>
+                {% endfor %}
+            </select>
+            {% if sucursal_seleccionada %}
+                <p style="margin-top: 10px; font-size: 13px; opacity: 0.8;">📍 Mostrando solo recursos de la sucursal seleccionada.</p>
+            {% endif %}
+        </div>
+
         <p>Selecciona una pestaña para ver y gestionar los recursos del sistema.</p>
 
         <div class="tabs">

@@ -131,13 +131,34 @@ def dashboard_empleado_view(request):
     if request.session.get('usuario_rol') != 'EMPLEADO':
         return redirect('cartelera')
     
-    from .models import Sala, Genero, Usuario, Pelicula, Funcion
+    from .models import Sala, Genero, Usuario, Pelicula, Funcion, Sucursal
+    
+    sucursal_id = request.GET.get('sucursal')
+    
+    # Querysets base
+    clientes = Usuario.objects.filter(rol='CLIENTE')
+    salas = Sala.objects.all()
+    generos = Genero.objects.all().order_by('nombre')
+    peliculas = Pelicula.objects.all().order_by('titulo')
+    funciones = Funcion.objects.all().order_by('-fecha', '-hora_inicio')
+    
+    # Aplicar filtros si hay sucursal seleccionada
+    if sucursal_id:
+        salas = salas.filter(sucursal_id=sucursal_id)
+        funciones = funciones.filter(sala__sucursal_id=sucursal_id)
+        # Mostramos películas que tengan funciones en esa sucursal
+        # Si queremos ver todas, se podría omitir este filtro, 
+        # pero el usuario pidió filtrar películas también.
+        peliculas = peliculas.filter(funciones__sala__sucursal_id=sucursal_id).distinct()
+
     context = {
-        'clientes': Usuario.objects.filter(rol='CLIENTE'),
-        'salas': Sala.objects.all(),
-        'generos': Genero.objects.all().order_by('nombre'),
-        'peliculas': Pelicula.objects.all().order_by('titulo'),
-        'funciones': Funcion.objects.all().order_by('-fecha', '-hora_inicio'),
+        'clientes': clientes,
+        'salas': salas,
+        'generos': generos,
+        'peliculas': peliculas,
+        'funciones': funciones,
+        'sucursales': Sucursal.objects.all(),
+        'sucursal_seleccionada': sucursal_id,
     }
     return render(request, 'cartelera/dashboard_empleado.html', context)
 
