@@ -7,6 +7,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
 from .forms import PeliculaForm, FuncionForm, GeneroForm, UsuarioForm, SalaForm
 from .models import Pelicula, Sucursal, Usuario, Funcion, Genero, RolUsuario, EstatusPelicula, Boleto, Sala
+from .decorators import role_required
 
 
 def get_data_from_tmdb(tmdb_id):
@@ -69,10 +70,8 @@ def cartelera_view(request):
     }
     return render(request, 'cartelera/cartelera.html', context)
 
+@role_required(['EMPLEADO'])
 def actualizar_datos_tmdb_view(request, pelicula_id):
-    if request.session.get('usuario_rol') != 'EMPLEADO':
-        return redirect('cartelera')
-    
     from .models import Pelicula
     from django.shortcuts import get_object_or_404
     from django.contrib import messages
@@ -138,10 +137,8 @@ def horarios_disponibles_view(request):
     return JsonResponse({'horarios': horarios_disponibles})
 
 
+@role_required(['EMPLEADO'])
 def dashboard_empleado_view(request):
-    if request.session.get('usuario_rol') != 'EMPLEADO':
-        return redirect('cartelera')
-    
     from .models import Sala, Genero, Usuario, Pelicula, Funcion, Sucursal
     
     sucursal_id = request.GET.get('sucursal')
@@ -195,9 +192,8 @@ def logout_view(request):
     return redirect('cartelera')
 
 
+@role_required(['EMPLEADO'])
 def agregar_pelicula_view(request):
-    if request.session.get('usuario_rol') != 'EMPLEADO':
-        return redirect('login')
     if request.method == 'POST':
         form = PeliculaForm(request.POST)
         if form.is_valid():
@@ -222,9 +218,8 @@ def agregar_pelicula_view(request):
     return render(request, 'cartelera/agregar_pelicula.html', {'form': form})
 
 
+@role_required(['EMPLEADO'])
 def editar_pelicula_view(request, pelicula_id):
-    if request.session.get('usuario_rol') != 'EMPLEADO':
-        return redirect('login')
     pelicula = get_object_or_404(Pelicula, id=pelicula_id)
     if request.method == 'POST':
         form = PeliculaForm(request.POST, instance=pelicula)
@@ -236,9 +231,8 @@ def editar_pelicula_view(request, pelicula_id):
     return render(request, 'cartelera/editar_pelicula.html', {'form': form, 'pelicula': pelicula})
 
 
+@role_required(['EMPLEADO'])
 def eliminar_pelicula_view(request, pelicula_id):
-    if request.session.get('usuario_rol') != 'EMPLEADO':
-        return redirect('login')
     pelicula = get_object_or_404(Pelicula, id=pelicula_id)
     if request.method == 'POST':
         pelicula.delete()
@@ -262,9 +256,8 @@ def detalle_pelicula_view(request, pelicula_id):
     return render(request, 'cartelera/detalle_pelicula.html', context)
 
 
+@role_required(['EMPLEADO'])
 def agregar_funcion_view(request):
-    if request.session.get('usuario_rol') != 'EMPLEADO':
-        return redirect('login')
     if request.method == 'POST':
         form = FuncionForm(request.POST)
         if form.is_valid():
@@ -284,9 +277,8 @@ def agregar_funcion_view(request):
     })
 
 
+@role_required(['ADMIN'])
 def usuarios_view(request):
-    if request.session.get('usuario_rol') != 'ADMIN':
-        return redirect('login')
     if request.method == 'POST':
         form = UsuarioForm(request.POST)
         if form.is_valid():
@@ -302,9 +294,8 @@ def usuarios_view(request):
     })
 
 
+@role_required(['ADMIN'])
 def editar_usuario_view(request, usuario_id):
-    if request.session.get('usuario_rol') != 'ADMIN':
-        return redirect('login')
     usuario = get_object_or_404(Usuario, id=usuario_id)
     if request.method == 'POST':
         form = UsuarioForm(request.POST, instance=usuario)
@@ -322,9 +313,8 @@ def editar_usuario_view(request, usuario_id):
     })
 
 
+@role_required(['ADMIN'])
 def eliminar_usuario_view(request, usuario_id):
-    if request.session.get('usuario_rol') != 'ADMIN':
-        return redirect('login')
     usuario = get_object_or_404(Usuario, id=usuario_id)
     if request.method == 'POST':
         if usuario.id == request.session.get('usuario_id'):
@@ -340,9 +330,8 @@ def eliminar_usuario_view(request, usuario_id):
     return redirect('usuarios')
 
 
+@role_required(['EMPLEADO'])
 def generos_view(request):
-    if request.session.get('usuario_rol') != 'EMPLEADO':
-        return redirect('login')
     if request.method == 'POST':
         form = GeneroForm(request.POST)
         if form.is_valid():
@@ -356,9 +345,8 @@ def generos_view(request):
     })
 
 
+@role_required(['EMPLEADO'])
 def editar_genero_view(request, genero_id):
-    if request.session.get('usuario_rol') != 'EMPLEADO':
-        return redirect('login')
     genero = get_object_or_404(Genero, id=genero_id)
     if request.method == 'POST':
         form = GeneroForm(request.POST, instance=genero)
@@ -374,9 +362,8 @@ def editar_genero_view(request, genero_id):
     })
 
 
+@role_required(['EMPLEADO'])
 def eliminar_genero_view(request, genero_id):
-    if request.session.get('usuario_rol') != 'EMPLEADO':
-        return redirect('login')
     genero = get_object_or_404(Genero, id=genero_id)
     if request.method == 'POST':
         if genero.pelicula_set.exists():
@@ -390,9 +377,8 @@ def eliminar_genero_view(request, genero_id):
     return redirect('generos')
 
 
+@role_required(['EMPLEADO'])
 def salas_view(request):
-    if request.session.get('usuario_rol') != 'EMPLEADO':
-        return redirect('login')
     if request.method == 'POST':
         form = SalaForm(request.POST)
         if form.is_valid():
@@ -406,9 +392,8 @@ def salas_view(request):
     })
 
 
+@role_required(['EMPLEADO'])
 def editar_sala_view(request, sala_id):
-    if request.session.get('usuario_rol') != 'EMPLEADO':
-        return redirect('login')
     sala = get_object_or_404(Sala, id=sala_id)
     if request.method == 'POST':
         form = SalaForm(request.POST, instance=sala)
@@ -424,9 +409,8 @@ def editar_sala_view(request, sala_id):
     })
 
 
+@role_required(['EMPLEADO'])
 def eliminar_sala_view(request, sala_id):
-    if request.session.get('usuario_rol') != 'EMPLEADO':
-        return redirect('login')
     sala = get_object_or_404(Sala, id=sala_id)
     if request.method == 'POST':
         if sala.funcion_set.exists():
