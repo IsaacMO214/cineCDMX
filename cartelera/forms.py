@@ -7,7 +7,7 @@ class GeneroForm(forms.ModelForm):
         model = Genero
         fields = ['nombre']
         widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Acción, Comedia, Terror...', 'required': 'required', 'minlength': '3', 'maxlength': '50'}),
+            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Acción, Comedia, Terror...', 'required': 'required', 'minlength': '4', 'maxlength': '50'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -16,15 +16,32 @@ class GeneroForm(forms.ModelForm):
             field.required = True
 
     def clean_nombre(self):
+        import re
         nombre = self.cleaned_data.get('nombre', '')
         if nombre is None: nombre = ''
         nombre = nombre.strip().title()
+        
         if not nombre:
             raise forms.ValidationError("Este campo es obligatorio y no puede estar vacío.")
-        if len(nombre) < 3:
-            raise forms.ValidationError("El nombre del género debe tener al menos 3 caracteres.")
-        if not any(c.isalpha() for c in nombre):
-            raise forms.ValidationError("El nombre del género debe contener letras.")
+            
+        if len(nombre) < 4:
+            raise forms.ValidationError("El nombre del género debe tener al menos 4 caracteres.")
+            
+        # Permitir solo letras, espacios y guiones (incluyendo acentos)
+        if not re.match(r'^[A-Za-záéíóúÁÉÍÓÚñÑ\s\-]+$', nombre):
+            raise forms.ValidationError("El género solo debe contener letras, espacios y guiones.")
+            
+        # Prevenir repeticiones innecesarias de letras (e.g. Accionnnnnnnnn)
+        if re.search(r'(.)\1{2,}', nombre):
+            raise forms.ValidationError("El texto contiene caracteres repetidos repetitivamente no permitidos.")
+            
+        # Chequear unicidad (ignorando mayúsculas y minúsculas)
+        qs = Genero.objects.filter(nombre__iexact=nombre)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError(f"El género '{nombre}' ya existe en la base de datos.")
+            
         return nombre
 
 
@@ -91,15 +108,25 @@ class UsuarioForm(forms.ModelForm):
             field.required = True
 
     def clean_nombre(self):
+        import re
         nombre = self.cleaned_data.get('nombre', '')
         if nombre is None: nombre = ''
-        nombre = nombre.strip()
+        nombre = nombre.strip().title()
+        
         if not nombre:
             raise forms.ValidationError("El nombre es obligatorio y no puede estar vacío.")
+            
         if len(nombre) < 3:
             raise forms.ValidationError("El nombre debe tener al menos 3 caracteres.")
-        if not any(c.isalpha() for c in nombre):
-            raise forms.ValidationError("El nombre debe contener letras.")
+            
+        # Permitir letras, espacios, guiones, puntos y apostrofes (O'Connor, J.R.R.)
+        if not re.match(r"^[A-Za-záéíóúÁÉÍÓÚñÑ\s\-\.\']+$", nombre):
+            raise forms.ValidationError("El nombre no debe contener números ni símbolos especiales ajenos a un nombre real.")
+            
+        # Prevenir repeticiones anormales de cualquier caracter (e.g. Juaaaan)
+        if re.search(r'(.)\1{2,}', nombre):
+            raise forms.ValidationError("El nombre no debe contener caracteres repetidos de forma anormal.")
+            
         return nombre
 
     def clean_correo(self):
