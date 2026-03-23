@@ -7,7 +7,7 @@ class GeneroForm(forms.ModelForm):
         model = Genero
         fields = ['nombre']
         widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Acción, Comedia, Terror...'}),
+            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Acción, Comedia, Terror...', 'required': 'required', 'minlength': '3', 'maxlength': '50'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -34,9 +34,9 @@ class SalaForm(forms.ModelForm):
         model = Sala
         fields = ['numero', 'sucursal', 'capacidad']
         widgets = {
-            'numero': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej. 1, 2, 3...'}),
-            'sucursal': forms.Select(attrs={'class': 'form-control'}),
-            'capacidad': forms.NumberInput(attrs={'class': 'form-control', 'min': 25, 'max': 144}),
+            'numero': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej. 1, 2, 3...', 'required': 'required', 'min': '1'}),
+            'sucursal': forms.Select(attrs={'class': 'form-control', 'required': 'required'}),
+            'capacidad': forms.NumberInput(attrs={'class': 'form-control', 'min': '25', 'max': '144', 'required': 'required'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -78,11 +78,11 @@ class UsuarioForm(forms.ModelForm):
         fields = ['nombre', 'correo', 'password', 'rol', 'sucursal']
         labels = {'password': 'Contraseña'}
         widgets = {
-            'nombre':   forms.TextInput(attrs={'class': 'form-control'}),
-            'correo':   forms.EmailInput(attrs={'class': 'form-control'}),
-            'password': forms.PasswordInput(attrs={'class': 'form-control'}, render_value=True),
-            'rol':      forms.Select(attrs={'class': 'form-control'}),
-            'sucursal': forms.Select(attrs={'class': 'form-control'}),
+            'nombre':   forms.TextInput(attrs={'class': 'form-control', 'required': 'required', 'minlength': '3', 'maxlength': '100'}),
+            'correo':   forms.EmailInput(attrs={'class': 'form-control', 'required': 'required', 'maxlength': '254'}),
+            'password': forms.PasswordInput(attrs={'class': 'form-control', 'required': 'required', 'minlength': '6'}, render_value=True),
+            'rol':      forms.Select(attrs={'class': 'form-control', 'required': 'required'}),
+            'sucursal': forms.Select(attrs={'class': 'form-control', 'required': 'required'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -132,16 +132,16 @@ class PeliculaForm(forms.ModelForm):
             'duracion_minutos': 'Duración (mins)',
         }
         widgets = {
-            'titulo':          forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
-            'tmdb_id':         forms.NumberInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
-            'sinopsis':        forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'readonly': 'readonly'}),
-            'imagen_url':      forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
-            'clasificacion':   forms.Select(attrs={'class': 'form-control'}),
-            'genero':          forms.Select(attrs={'class': 'form-control'}),
-            'idioma':          forms.Select(choices=[('Inglés', 'Inglés'), ('Español Latino', 'Español Latino')], attrs={'class': 'form-control'}),
-            'duracion_minutos':forms.NumberInput(attrs={'class': 'form-control', 'max': '240'}),
-            'costo_entrada':   forms.Select(choices=[(32.00, 'Común ($32.00)'), (80.00, 'Estreno ($80.00)')], attrs={'class': 'form-control'}),
-            'estatus':         forms.Select(attrs={'class': 'form-control'}),
+            'titulo':          forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly', 'required': 'required'}),
+            'tmdb_id':         forms.NumberInput(attrs={'class': 'form-control', 'readonly': 'readonly', 'required': 'required'}),
+            'sinopsis':        forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'readonly': 'readonly', 'required': 'required'}),
+            'imagen_url':      forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly', 'required': 'required'}),
+            'clasificacion':   forms.Select(attrs={'class': 'form-control', 'required': 'required'}),
+            'genero':          forms.Select(attrs={'class': 'form-control', 'required': 'required'}),
+            'idioma':          forms.Select(choices=[('Inglés', 'Inglés'), ('Español Latino', 'Español Latino')], attrs={'class': 'form-control', 'required': 'required'}),
+            'duracion_minutos':forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'max': '500', 'required': 'required'}),
+            'costo_entrada':   forms.Select(choices=[(32.00, 'Común ($32.00)'), (80.00, 'Estreno ($80.00)')], attrs={'class': 'form-control', 'required': 'required'}),
+            'estatus':         forms.Select(attrs={'class': 'form-control', 'required': 'required'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -189,15 +189,15 @@ class FuncionForm(forms.ModelForm):
         ('16:00:00', '4:00 PM (16:00)'),
         ('18:00:00', '6:00 PM (18:00)'),
     ]
-    hora_inicio = forms.ChoiceField(choices=HORARIOS_CHOICES, widget=forms.Select(attrs={'class': 'form-control'}))
+    hora_inicio = forms.ChoiceField(choices=HORARIOS_CHOICES, widget=forms.Select(attrs={'class': 'form-control', 'required': 'required'}))
 
     class Meta:
         model = Funcion
         fields = ['pelicula', 'sala', 'fecha', 'hora_inicio']
         widgets = {
-            'pelicula':    forms.Select(attrs={'class': 'form-control'}),
-            'sala':        forms.Select(attrs={'class': 'form-control'}),
-            'fecha':       forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'pelicula':    forms.Select(attrs={'class': 'form-control', 'required': 'required'}),
+            'sala':        forms.Select(attrs={'class': 'form-control', 'required': 'required'}),
+            'fecha':       forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'required': 'required'}),
         }
 
     def __init__(self, *args, **kwargs):
